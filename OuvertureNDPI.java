@@ -29,7 +29,7 @@ import org.openslide.gui.OpenSlideView;
 
 
 public class OuvertureNDPI {
-	//public int ImageLevelSelect;
+	
 	public JPanel lepanel = new JPanel(); // le panel de l'image
 	public int SelectLvlImage = 100;
 	public int lvlselected; //stock le radio button selectionné
@@ -49,20 +49,8 @@ public class OuvertureNDPI {
 		int x = open.getLevelCount(); //permet de connaitre le nombre de niveau de l'image +1
 		System.out.println(x);
 		
-		BufferedImage image = open.createThumbnailImage(1000);
+		BufferedImage image = open.createThumbnailImage( 0	 ,0, (int)(open.getLevel0Width()) ,(int)(open.getLevel0Height()) ,1000);
 		lepanel.add(caseImage(image));
-		
-		System.out.println(open.getAssociatedImages());
-		Map<String, AssociatedImage> eu = open.getAssociatedImages();
-		System.out.println(eu.size());
-		System.out.println(eu.hashCode());
-		System.out.println(open.getProperties());
-		System.out.println("string"+eu.toString());
-		System.out.println("value"+eu.values());
-		System.out.println(eu.isEmpty());
-		System.out.println(eu.keySet());
-		System.out.println(eu.get("macro"));
-		System.out.println(eu.containsValue(2));
 	    this.panelOpened.add(lepanel);
 	    return panelOpened;
 	}
@@ -73,9 +61,10 @@ public class OuvertureNDPI {
 		//System.out.println(a);
 		return a;
 	}
+	
 	/************************* Affichage de la selection du lvl  ***************************************/
 
-	public JPanel SelectionduNiveauImageATraite(String nomFichier, String pathFichier, File filechoose, JFileChooser chooser) throws IOException {
+	public JPanel InformationImage(String nomFichier, String pathFichier, File filechoose, JFileChooser chooser) throws IOException {
 		
 		OpenSlide open = new OpenSlide(filechoose);
 		JPanel choix = new JPanel();
@@ -118,11 +107,10 @@ public class OuvertureNDPI {
 		 JButton bouton = new JButton("submit");
 		 choix.add(bouton);
 		 this.panelOpened.add(choix);
-		    choix.setBackground(new Color(86, 115, 154));
-		    System.out.println("6");
+		 choix.setBackground(new Color(86, 115, 154));
+		 System.out.println("6");
 		 bouton.addActionListener(new ActionListener(){
-			    
-						public void actionPerformed(ActionEvent e){
+			    public void actionPerformed(ActionEvent e){
 							System.out.println("Clicked sur bouton");
 								for(JRadioButton i : radioList){
 									
@@ -154,7 +142,7 @@ public class OuvertureNDPI {
 											 long width = (long)(Double.parseDouble(z.get("openslide.level["+SelectLvlImage+"].width")));
 											 long  height = (long)(Double.parseDouble(z.get("openslide.level["+SelectLvlImage+"].height")));
 											 
-											 BufferedImage lama = open.createThumbnailImage( (int)(open.getLevel0Width()/2) ,(int)(open.getLevel0Height()/2), (int)(open.getLevel0Width()/2) ,(int)(open.getLevel0Height()/2) ,(int)width);
+											 BufferedImage lama = open.createThumbnailImage( (int)(open.getLevel0Width()/4) ,(int)(open.getLevel0Height()/4), (int)(open.getLevel0Width()/2) ,(int)(open.getLevel0Height()/2) ,(int)width);
 											 a.add(caseImage(lama));
 											 panelOpened.removeAll();
 											 panelOpened.validate();
@@ -212,9 +200,6 @@ public class OuvertureNDPI {
 	public int getLvlselected() {
 		return lvlselected;
 	}
-
-
-
 	public void setLvlselected(int lvlselected) {
 		this.lvlselected = lvlselected;
 	}

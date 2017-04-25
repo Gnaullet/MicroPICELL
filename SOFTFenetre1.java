@@ -20,6 +20,8 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.plaf.synth.SynthOptionPaneUI;
 
+import org.openslide.OpenSlide;
+
 
 
 public class SOFTFenetre1 extends JFrame { 
@@ -83,7 +85,10 @@ public class SOFTFenetre1 extends JFrame {
 	public void setFilechoose(File filechoose) {
 		Filechoose = filechoose;
 	}
-
+	   private JPanel panel = new JPanel();
+	   private JPanel ZoomImage = new JPanel();
+	   private JPanel panelImageOrigin = new JPanel();
+	   private BufferedImage Image;
 	   private String nomFichier;
  	   private String pathFichier;
  	   private File Filechoose;
@@ -94,11 +99,21 @@ public class SOFTFenetre1 extends JFrame {
 	   private MenuItem save = new MenuItem("save");
 	   private MenuItem exit = new MenuItem("exit");
 	   private MenuItem colItem = new MenuItem("toto");
+	   private JPanel imagetransitoire = new JPanel();
 	   public OuvertureNDPI ouv;
 	   private int x0, y0;
 	   public int tabValeur[] = new int[4];
-	  
-	   private Boolean NiveauSelectionner = false;
+	   private int CountOfZoom=1;
+
+
+	public int getCountOfZoom() {
+		return CountOfZoom;
+	}
+	public void setCountOfZoom(int countOfZoom) {
+		CountOfZoom = countOfZoom;
+	}
+
+	private Boolean NiveauSelectionner = false;
 	   
 	   private Graphics g;
 	   
@@ -125,7 +140,7 @@ public class SOFTFenetre1 extends JFrame {
 		 private JPanel buildContentPane(){
 			 
 				
-			 	JPanel panel = new JPanel();
+			 	
 				panel.setBackground(new Color(1, 51, 102));
 				JPanel Tools = new JPanel();
 		        Tools = ToolsBar();
@@ -151,36 +166,22 @@ public class SOFTFenetre1 extends JFrame {
 					        	String nomFichier=chooser.getSelectedFile().getName();
 					        	String pathFichier=chooser.getSelectedFile().getPath();
 
-						        File filechoose = chooser.getSelectedFile();
+					        	Filechoose = chooser.getSelectedFile();
 						        
 						        
-						        OuvertureNDPI ouv = new OuvertureNDPI(nomFichier, pathFichier, filechoose, chooser);
+						        OuvertureNDPI ouv = new OuvertureNDPI(nomFichier, pathFichier, Filechoose, chooser);
 								
 						        try {
 									 //chargement du thumnail creer dans monImage
-									 //JPanel image = new JPanel(); //Creation nouveau Panel
-									 //panel.add( );
+									
 									 panel.setLayout(new GridBagLayout());
 									 GridBagConstraints gbc = new GridBagConstraints();
-									
 									 gbc.gridx = 1;
 									 gbc.gridy = 1;
-//									 gbc.gridwidth = 1;
-//									 gbc.gridheight = 1;
-									 gbc.anchor = GridBagConstraints.SOUTHWEST;
-									// gbc.insets = new Insets(10, 10, 10, 10);
-									 // gbc.fill = GridBagConstraints.BOTH;
-									 panel.add(ouv.ouvertureImage(nomFichier,pathFichier,filechoose,chooser), gbc);
-									 
-									 gbc.gridx = 0;
-									 gbc.gridy = 1;
-									 panel.add(ouv.SelectionduNiveauImageATraite(nomFichier, pathFichier, filechoose, chooser),gbc);
-									 //Map<String, AssociatedImage> z = ouv.afficheMapping(nomFichier, pathFichier, filechoose, chooser);
-									 NiveauSelectionner=true;
+									 panelImageOrigin.add(ouv.ouvertureImage(nomFichier,pathFichier,Filechoose,chooser));
+									 panel.add(panelImageOrigin , gbc);
 									 setVisible(true);
-									
 									 
-									 System.out.println(getIndex());
 								} catch (IOException e1) {
 									e1.printStackTrace();
 								}	
@@ -194,28 +195,16 @@ public class SOFTFenetre1 extends JFrame {
 				  
 			        
 			       	setMenuBar(menuBar);
-//			        panel.add(getJMenuBar());
-//			        ShowMouseCoordsFrame ps= new ShowMouseCoordsFrame();
-//			        JPanel ps2 = new JPanel();
-//			        ps2 = ps.ShowMouseCoordsFrame();
-//			        panel.setLayout(new BorderLayout()); 
-//			        ps2.setPreferredSize(new Dimension(((int)getToolkit().getScreenSize().getWidth() - 40),30));
-//			        panel.add("South",ps2);
-			        
+		        
 			        if(tabValeur[0] != 0 ){
 						 System.out.println(tabValeur[0]);
 						 System.out.println(tabValeur[1]);
 						 System.out.println(tabValeur[2]);
 						 System.out.println(tabValeur[3]);
 					 }
+			        
 			        return panel;
-			       
-			        //&& nomFichier; 
-			       
-			       
-			       
-			
-			}
+			    }
 		 public JPanel ToolsBar(){
 				JPanel Tools = new JPanel();
 		        
@@ -237,12 +226,9 @@ public class SOFTFenetre1 extends JFrame {
 		        		dr.init();
 		        		}
 		        	});
-		        
-		        
 		        Tools.add(buttonBox);
 
 		        jButton2.setText("cercle");
-		        
 		        jButton2.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
 		        jButton2.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
 		        Tools.add(jButton2);
@@ -265,9 +251,9 @@ public class SOFTFenetre1 extends JFrame {
 		        jButton4.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
 		        Tools.add(jButton4);
 		        jButton4.addActionListener(new ActionListener(){
-		        public void actionPerformed(ActionEvent e){
-	        		System.out.println("clicksurbutton zoom");		        	  		
-	        	}
+			        public void actionPerformed(ActionEvent e){
+		        		Zoom zoom = new Zoom();
+		        	}
 	        });
 
 		        jButton5.setText("annotation");
@@ -288,8 +274,14 @@ public class SOFTFenetre1 extends JFrame {
 			return Filechoose;
 		}
 		
-		
-
+		/***************************** DESSINER IMAGE ***********************************/
+		public JPanel caseImage(BufferedImage monImage){
+			JPanel MesIcon = new JPanel(); 
+			MesIcon.setLayout(new FlowLayout());
+			JLabel image = new JLabel( new ImageIcon(monImage));
+			MesIcon.add(image);
+			return MesIcon;
+		}
 		/***************************** DESSIN TRAIT ***********************************/
 
 	
@@ -373,7 +365,7 @@ public class SOFTFenetre1 extends JFrame {
 
 			public void mouseDragged(MouseEvent e) {}
 			public void mouseMoved(MouseEvent e) {}
-			public void mouseClicked(MouseEvent e) {}
+			
 			public void mouseEntered(MouseEvent e) {}
 			public void mouseExited(MouseEvent e) {}
 			
@@ -385,14 +377,69 @@ public class SOFTFenetre1 extends JFrame {
 				tabValeur[3]= yfin;
 				return tabValeur;
 			}
+			public void mouseClicked(MouseEvent arg0) {}
 		}
+		/**************************** Zoom  ************************************/
+		public class Zoom implements MouseListener, MouseMotionListener{
+			Zoom(){
+				int x0; int y0;
+				addMouseListener(this);
+				addMouseMotionListener(this);
+			}
+			public void mouseClicked(MouseEvent e) {System.out.println("clicksurbutton zoom");	
+			int buttonDown = e.getButton();
+			 
+		    if (buttonDown == MouseEvent.BUTTON1) {
+		    	CountOfZoom = CountOfZoom*2;
+		    } 
+		    if(buttonDown == MouseEvent.BUTTON3) {
+		    	if(CountOfZoom != 1){
+		    	CountOfZoom = CountOfZoom/2;
+		    	}
+		    }
+			System.out.println(CountOfZoom);
+			try {
+				OpenSlide open = new OpenSlide(getFilechoose());
+				Point position = e.getPoint();
+				x0 =position.x;
+				System.out.println(x0);
+				y0 = position.y;
+				System.out.println(y0);
+				// problem de zoom toujours en haut a gauche
+				Image = open.createThumbnailImage(x0,y0, (int)(open.getLevel0Width()/CountOfZoom) ,(int)(open.getLevel0Height()/CountOfZoom) ,1000);
+				System.out.println(Image);
+				 
+				 panel.remove(panelImageOrigin);
+				 panel.validate();
+				 ZoomImage.remove(imagetransitoire);
+				 panel.revalidate();
+				 panel.repaint();
+				 imagetransitoire = caseImage(Image);
+				 ZoomImage.add(imagetransitoire);
+				 panel.setLayout(new GridBagLayout());
+				 GridBagConstraints gbc = new GridBagConstraints();
+				 gbc.gridx = 1;
+				 gbc.gridy = 1;
+				 panel.add(ZoomImage,gbc);
+				 panel.revalidate();
+				
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+				System.out.println("ca marche pas");
+			}
+			}
+			public void mouseDragged(MouseEvent arg0) {}
+			public void mouseMoved(MouseEvent arg0) {}
+			public void mouseEntered(MouseEvent e){}
+			public void mouseExited(MouseEvent e) {}
+			public void mousePressed(MouseEvent e) {}
+			public void mouseReleased(MouseEvent e) {}
+		}
+		
 /**************************** Curseur de la souris ************************************/
-
-
-	
 		// Acting on mouse movement - display mouse coordinates
 		
-
 		class MousePad extends JPanel implements MouseMotionListener {
 		   JTextField mouse_x, mouse_y;
 		   
@@ -406,10 +453,7 @@ public class SOFTFenetre1 extends JFrame {
 		   
 		   public void mouseMoved (MouseEvent event) {
 		      mouse_x.setText(String.valueOf(event.getX()));
-		      
 		      mouse_y.setText(String.valueOf(event.getY()));
-		     
-		      
 		   }
 		}
 
