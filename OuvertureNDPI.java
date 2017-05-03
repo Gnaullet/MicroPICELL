@@ -78,15 +78,12 @@ public class OuvertureNDPI {
 
 		 choix.setLayout(new GridLayout((nbNiv+3),1));
 		 //choix.setLayout(new GridBagLayout());
-	        GridBagConstraints gbc = new GridBagConstraints();
-	       
-	        gbc.fill = GridBagConstraints.BOTH;
-	        gbc.gridx= 0;
-	        gbc.gridy = 1;
+	        
 			JLabel label = new JLabel( "<html><br/>Choix du niveau de l'image à traiter <br> choisir parmis les "+ (nbNiv-1) + "niveaux:  </html>"); 
-			choix.add(label,gbc);
+			choix.add(label);
 			ButtonGroup group = new ButtonGroup();
 			ArrayList <JRadioButton> radioList = new ArrayList<JRadioButton>() ;	
+		
 			for(int i=0; i<nbNiv; i++){
 
 			
@@ -94,14 +91,11 @@ public class OuvertureNDPI {
 			radioList.add(test1);
 			radioList.size();
 			//BufferedImage monimage = open.createThumbnailImage(50);
-			gbc.gridx=1;
-			gbc.gridy=1;
+		
 			//choix.add(CaseImage(monimage),gbc);
 			group.add(test1);
-			choix.add(test1,gbc);
-			test1.setBackground(new Color(86, 115, 154));
-			
-			
+			choix.add(test1);
+			test1.setBackground(Color.white);
 		}
 			
 		 JButton bouton = new JButton("submit");
@@ -115,7 +109,6 @@ public class OuvertureNDPI {
 								for(JRadioButton i : radioList){
 									
 									if(i.isSelected()){
-										
 										lvlselected = radioList.indexOf(i);
 										System.out.println(lvlselected);
 										
@@ -160,7 +153,12 @@ public class OuvertureNDPI {
 				});
 		 		return panelOpened;
 		}
-	
+	public BufferedImage ReturnBuffImage(String fileName, String Path,File filechoose,JFileChooser chooser) throws IOException{
+		OpenSlide open = new OpenSlide(filechoose);
+		BufferedImage image = open.createThumbnailImage( 0	 ,0, (int)(open.getLevel0Width()) ,(int)(open.getLevel0Height()) ,1000);
+		return image;
+		
+	}
 	public String getrecupererNom(JFileChooser chooser) {
 		String nom= chooser.getSelectedFile().getName();
 		return nom;
