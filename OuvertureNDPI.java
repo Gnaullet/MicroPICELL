@@ -3,7 +3,6 @@ package soft;
 
 import java.awt.Color;
 import java.awt.FlowLayout;
-import java.awt.GridBagConstraints;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,7 +22,6 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 
 import org.openslide.*;
-import org.openslide.gui.OpenSlideView;
 
 
 
@@ -36,6 +34,11 @@ public class OuvertureNDPI {
 	private JPanel panelOpened = new JPanel();
 	private int index;
 	JPanel a = new JPanel();
+	private OpenSlide open;
+	private OpenSlide open2;
+	private OpenSlide open3;
+	private OpenSlide open4;
+	private OpenSlide open5;
 	
 	public OuvertureNDPI(String nomFichier, String pathFichier, File filechoose, JFileChooser chooser) {
 	}
@@ -44,7 +47,7 @@ public class OuvertureNDPI {
 
 	public JPanel ouvertureImage(String fileName, String Path,File filechoose,JFileChooser chooser) throws IOException{
 		
-		OpenSlide open = new OpenSlide(filechoose);
+		open = new OpenSlide(filechoose);
 		
 		int x = open.getLevelCount(); //permet de connaitre le nombre de niveau de l'image +1
 		System.out.println(x);
@@ -55,9 +58,9 @@ public class OuvertureNDPI {
 	    return panelOpened;
 	}
 	public Map<String, AssociatedImage> afficheMapping(String fileName, String Path,File filechoose,JFileChooser chooser) throws IOException{
-		OpenSlide open= new OpenSlide(filechoose);
+		open2 = new OpenSlide(filechoose);
 		
-		Map<String, AssociatedImage> a = open.getAssociatedImages();
+		Map<String, AssociatedImage> a = open2.getAssociatedImages();
 		//System.out.println(a);
 		return a;
 	}
@@ -66,11 +69,11 @@ public class OuvertureNDPI {
 
 	public JPanel InformationImage(String nomFichier, String pathFichier, File filechoose, JFileChooser chooser) throws IOException {
 		
-		OpenSlide open = new OpenSlide(filechoose);
+		open3 = new OpenSlide(filechoose);
 		JPanel choix = new JPanel();
 		
 		
-		int nbNiv = open.getLevelCount();
+		int nbNiv = open3.getLevelCount();
 		//choix.setSize(120, 1000);
 		
 		
@@ -87,7 +90,7 @@ public class OuvertureNDPI {
 			for(int i=0; i<nbNiv; i++){
 
 			
-			JRadioButton test1  = new JRadioButton("<html> Level : "+i+"<br/>Height(px): "+ open.getLevelHeight(i) +"<br/>"+ "Width(px): "+ open.getLevelWidth(i)+"<br/></html>");
+			JRadioButton test1  = new JRadioButton("<html> Level : "+i+"<br/>Height(px): "+ open3.getLevelHeight(i) +"<br/>"+ "Width(px): "+ open3.getLevelWidth(i)+"<br/></html>");
 			radioList.add(test1);
 			radioList.size();
 			//BufferedImage monimage = open.createThumbnailImage(50);
@@ -104,7 +107,10 @@ public class OuvertureNDPI {
 		 choix.setBackground(new Color(86, 115, 154));
 		 System.out.println("6");
 		 bouton.addActionListener(new ActionListener(){
-			    public void actionPerformed(ActionEvent e){
+			    private Map<String, AssociatedImage> r;
+				private long height;
+
+				public void actionPerformed(ActionEvent e){
 							System.out.println("Clicked sur bouton");
 								for(JRadioButton i : radioList){
 									
@@ -125,17 +131,17 @@ public class OuvertureNDPI {
 										
 										
 										try {
-											 Map<String, AssociatedImage> r = open.getAssociatedImages();
-											 Map<String, String> z = open.getProperties();
+											 setR(open3.getAssociatedImages());
+											 Map<String, String> z = open3.getProperties();
 											 int sizeofmap = z.size();
 											 Collection<String> valeur = z.values();
 											 System.out.println(z);
 											 System.out.println(sizeofmap);
 											 System.out.println(valeur);
 											 long width = (long)(Double.parseDouble(z.get("openslide.level["+SelectLvlImage+"].width")));
-											 long  height = (long)(Double.parseDouble(z.get("openslide.level["+SelectLvlImage+"].height")));
+											 setHeight((long)(Double.parseDouble(z.get("openslide.level["+SelectLvlImage+"].height"))));
 											 
-											 BufferedImage lama = open.createThumbnailImage( (int)(open.getLevel0Width()/4) ,(int)(open.getLevel0Height()/4), (int)(open.getLevel0Width()/2) ,(int)(open.getLevel0Height()/2) ,(int)width);
+											 BufferedImage lama = open3.createThumbnailImage( (int)(open3.getLevel0Width()/4) ,(int)(open3.getLevel0Height()/4), (int)(open3.getLevel0Width()/2) ,(int)(open3.getLevel0Height()/2) ,(int)width);
 											 a.add(caseImage(lama));
 											 panelOpened.removeAll();
 											 panelOpened.validate();
@@ -150,12 +156,30 @@ public class OuvertureNDPI {
 								}	
 								System.out.println("level choose : "+SelectLvlImage);
 						}
+
+				@SuppressWarnings("unused")
+				public Map<String, AssociatedImage> getR() {
+					return r;
+				}
+
+				public void setR(Map<String, AssociatedImage> r) {
+					this.r = r;
+				}
+
+				@SuppressWarnings("unused")
+				public long getHeight() {
+					return height;
+				}
+
+				public void setHeight(long height) {
+					this.height = height;
+				}
 				});
 		 		return panelOpened;
 		}
 	public BufferedImage ReturnBuffImage(String fileName, String Path,File filechoose,JFileChooser chooser) throws IOException{
-		OpenSlide open = new OpenSlide(filechoose);
-		BufferedImage image = open.createThumbnailImage( 0	 ,0, (int)(open.getLevel0Width()) ,(int)(open.getLevel0Height()) ,1000);
+		open4 = new OpenSlide(filechoose);
+		BufferedImage image = open4.createThumbnailImage( 0	 ,0, (int)(open4.getLevel0Width()) ,(int)(open4.getLevel0Height()) ,1000);
 		return image;
 		
 	}
@@ -171,8 +195,8 @@ public class OuvertureNDPI {
 	
 	public int OpenWholeImage(int level, String nomFichier, String pathFichier, File filechoose, JFileChooser chooser) throws IOException{
 		System.out.println("lvl :" +level);
-		OpenSlide open = new OpenSlide(filechoose);
-		Map<String, String> properties = open.getProperties();
+		open5 = new OpenSlide(filechoose);
+		Map<String, String> properties = open5.getProperties();
 		System.out.println(properties.size());
 		return level;	
 	}

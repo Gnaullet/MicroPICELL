@@ -1,11 +1,28 @@
 package soft;
 
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.FlowLayout;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.awt.Image;
+import java.awt.Label;
+import java.awt.Menu;
+import java.awt.MenuBar;
+import java.awt.MenuItem;
+import java.awt.Point;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
@@ -16,20 +33,30 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
-import javax.swing.SwingUtilities;
-import javax.swing.border.Border;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import org.openslide.OpenSlide;
 
-import ij.IJ;
 import ij.ImagePlus;
+import ij.gui.Roi;
+import ij.process.ColorProcessor;
+import ij.process.ImageConverter;
+import ij.process.ImageProcessor;
+import ij.process.StackConverter;
+import trainableSegmentation.WekaSegmentation;
+import trainableSegmentation.Weka_Segmentation;
 
 
 public class SOFTFenetre1 extends JFrame { 
 
-	
+	   /**
+	 * 
+	 */
+	private static final long serialVersionUID = 5449375878197333562L;
+	private int widthThumbnail;
+	   private int heightThumbnail;
 	   private JPanel zoomSeg = new JPanel();
-	   private JPanel Feature = new JPanel();
 	   private JPanel panelAffichage = new JPanel();
 	   private JPanel Count = new JPanel();
 	   private JPanel Segmentation = new JPanel();
@@ -45,18 +72,17 @@ public class SOFTFenetre1 extends JFrame {
 	   public String nomFichier;
  	   public String pathFichier;
  	   private int zoomCounter=1;
+ 	   private ImagePlus IP;
  	   int x;
 	   int y;
+	   
  	   public JFileChooser getChooser() {
 		return chooser;
 	}
 	public void setChooser(JFileChooser chooser) {
 		this.chooser = chooser;
 	}
-
-
-
-	private File Filechoose;
+	   private File Filechoose;
 	   private MenuBar menuBar = new MenuBar();
 	   private Menu ficMenu = new Menu("Fichier");
 	   private Menu editMenu = new Menu("Edition");
@@ -73,23 +99,42 @@ public class SOFTFenetre1 extends JFrame {
 	   public JFileChooser chooser = new JFileChooser();
 	   public BufferedImage buffImage;
 	   private JPanel Bandeau = new JPanel();
-	   private position ps =null;
-	 
+	   private JPanel panelPane = new JPanel();
+	   private LinkedList<Float> l = new LinkedList<Float>();
 	   
 	public int getCountZoom() {
 		return (int) CountZoom;
 	}
 	public void setCountZoom(int CountZoom) {
-		CountZoom = CountZoom;
+		this.CountZoom = CountZoom;
 	}
 	
 	
 	   
 	   private Graphics g;
+	   /************ Pour class segmentation ***************/
 	private boolean doneone=false;
-	   
+	private int numOfClasses = 2;
+	public JPanel panelTotalSegmentation = new JPanel();
+	public JPanel panelclass = new JPanel();
+	private JButton trainButton = null;
+	private JButton overlayButton = null;
+	private JButton resultButton = null;
+	private JButton probabilityButton = null;
+	private int CounterButtonOverlay = 0;
+	private Weka_Segmentation weka = new Weka_Segmentation();
+	private WekaSegmentation weka2 = new WekaSegmentation();
+//	private SOFTFenetre1 sf = new SOFTFenetre1();
+//	private OuvertureNDPI ouv = new OuvertureNDPI(sf.getnomFichier(), sf.getPathFichier(), sf.getFilechoose(), sf.getChooser());
+//	private ImagePlus IP = new ImagePlus(sf.getNomFichier(), ouv.getLama());
+private JButton addClassButton = null;
+public JPanel panelSegmentation = new JPanel();
+public JPanel stockTransitoryImage = new JPanel();
+//Weka_Segmentation weka = new Weka_Segmentation();
 	//   private OuvertureNDPI() ouv = new OuvertureNDPI("ouv");
-	  
+
+	  /************************** Initialisation de SOFTFenetre1 ******************************/
+
 		 public SOFTFenetre1(){
 				super();
 				build();//On initialise notre fenêtre
@@ -117,16 +162,17 @@ public class SOFTFenetre1 extends JFrame {
 		          
 		          panelAffichage.add(Bandeau, BorderLayout.SOUTH);
 		        //  position ps = new position();
+		          
 		          ficMenu.add(openItem);
 			      ficMenu.add(save);
 				  ficMenu.add(exit);
 			      editMenu.add(colItem);
 			      menuBar.add(ficMenu);
 			      menuBar.add(editMenu);
-			      openItem.addActionListener(new ActionListener(){
+			      exit.addActionListener(new ActionListener(){
 					    
 						public void actionPerformed(ActionEvent e){
-							System.out.println("Fermeture");
+							System.exit(0);
 						}
 					});
 			      openItem.addActionListener(new ActionListener(){
@@ -147,31 +193,44 @@ public class SOFTFenetre1 extends JFrame {
 						        try {
 									 //chargement du thumnail creer dans monImage
 									 
+						        	if(ZoomImage.getComponentCount()==1){
+										 System.out.println("déja une image");
+										 ZoomImage.remove(imagetransitoire); 
+										 ZoomImage.validate();
+									 }
+						        	
 									 imagetransitoire.add(ouv.ouvertureImage(nomFichier,pathFichier,Filechoose,chooser));
 									 
 									 //ZoomImage.setBorder(javax.swing.BorderFactory.createEmptyBorder());
 									 ZoomImage.add(imagetransitoire);
+									 ZoomImage.validate();
+									 ZoomImage.repaint();
 									 panel.add(ZoomImage);
-									 ps = new position(imagetransitoire);
-									// buffImage = ouv.ReturnBuffImage(nomFichier,pathFichier,Filechoose,chooser);
-									// ImagePlus IP = new ImagePlus(nomFichier, buffImage);
-									// java.awt.Image image = IP.getImage();
-							    	//	IP.getCanvas();
+									 new position(imagetransitoire);
+									buffImage = ouv.ReturnBuffImage(nomFichier,pathFichier,Filechoose,chooser);
+									IP = new ImagePlus(nomFichier, buffImage);
 									//IP.show();
-									 setVisible(true);
+									System.out.println("getCurentslice"+IP.getCurrentSlice());
+									weka2.setTrainingImage(IP);
+	
+									// java.awt.Image image = IP.getImage();
+							    	// IP.getCanvas();
+									setVisible(true);
 									 
 								} catch (IOException e1) {
 									e1.printStackTrace();
 								}	
 							}
 					        else{
-					        	
 					        	System.out.println("ERROR");
 					        }
 						}
-					});	      
+					});	 
+			     
 				    setMenuBar(menuBar);
-		            onglet.add("open Image" , panel);
+				    
+				    panelPane.add(panel);
+		            onglet.add("open Image" , panelPane);
 			       // Feature.add(Feature());
 			        //onglet.add("Selection of features of image", Feature);
 			        Segmentation.setLayout(new BorderLayout());
@@ -182,11 +241,22 @@ public class SOFTFenetre1 extends JFrame {
 			        onglet.add("Batch", Batch);
 			        panelAffichage.add(onglet);
 			        panelAffichage.setBackground(Color.WHITE);
-			        
-			       
+			        onglet.addChangeListener(new ChangeListener() {
+			            public void stateChanged(ChangeEvent e) {
+			                
+			                if(onglet.getSelectedComponent().equals(Segmentation)) {
+			                	
+			                	panelPane.removeAll();
+					        	panel.validate();
+					        	Segmentation.add(panel);
+					        	Segmentation.revalidate();
+					     }
+			            }
+			        });
 			        return panelAffichage;
 			    }
-
+		 
+         /******************* Tools Bar ************************/
 		 public JPanel ToolsBar(){
 			 
 			    JPanel Tools = new JPanel();
@@ -203,7 +273,7 @@ public class SOFTFenetre1 extends JFrame {
 		        
 		        buttonBox.addActionListener(new ActionListener(){
 		        	public void actionPerformed(ActionEvent e){
-		        		System.out.println("clicksurbutton carre");
+		        		
 		        		dessinerRec dr = new dessinerRec();
 		        		dr.init();
 		        		}
@@ -222,7 +292,7 @@ public class SOFTFenetre1 extends JFrame {
 		        Tools.add(jButton3);
 		        jButton3.addActionListener(new ActionListener(){
 		        	public void actionPerformed(ActionEvent e){
-		        		System.out.println("clicksurbutton trait");
+		        		
 		        		DessinTrait dt = new DessinTrait();
 		        		dt.init();
 		        	}
@@ -233,20 +303,37 @@ public class SOFTFenetre1 extends JFrame {
 		        jButton4.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
 		        Tools.add(jButton4);
 		        jButton4.addActionListener(new ActionListener(){
-			        public void actionPerformed(ActionEvent e){
-			        	System.out.println("click sur zoom");
-		        		Zoom zoom = new Zoom();
+			        private Zoom zoom;
+
+					public void actionPerformed(ActionEvent e){
+			        	
+		        		setZoom(new Zoom());
 		        	}
+
+					@SuppressWarnings("unused")
+					public Zoom getZoom() {
+						return zoom;
+					}
+
+					public void setZoom(Zoom zoom) {
+						this.zoom = zoom;
+					}
 	        });
 
 		        jButton5.setText("annotation");
-		    //    jButton5.setFocusable(false);
 		        jButton5.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
 		        jButton5.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
 		        jButton5.addActionListener(new ActionListener(){
 		        public void actionPerformed(ActionEvent e){
-	        		System.out.println("clicksurbutton Trait");
-	        					
+		        	for(int i = 0; i < l.size(); i++){
+					     if(i%2 == 0){
+					      System.out.println("Élément à l'index (x) " + i + " = " + l.get(i));
+					     }
+					     
+					     if(i%2 == 1){
+						      System.out.println("Élément à l'index (y) " + i + " = " + l.get(i));
+						     }
+					     }	
 	        		}
 	        	});
 		        Tools.add(jButton5);
@@ -283,8 +370,8 @@ public class SOFTFenetre1 extends JFrame {
 			ArrayList <JCheckBox> radioList = new ArrayList<JCheckBox>() ;	
 			if (doneone==false){
 				String[] TabFeature = {"Gaussian", "Hessian"};
-				int a = TabFeature.length;
-				System.out.println(a);
+				
+				
 				doneone=true;
 			
 			
@@ -292,8 +379,7 @@ public class SOFTFenetre1 extends JFrame {
 			JCheckBox tab1 = new JCheckBox("<html> <br>" + tab + "<br> </html>");
 			radioList.add(tab1);
 			radioList.size();	
-			System.out.println(tab1);
-
+		
 		      imagetransitoire= null;
 		group.add(tab1);
 			gui.add(tab1);
@@ -309,11 +395,61 @@ public class SOFTFenetre1 extends JFrame {
 		}
 		
 		/***************************** DESSIN TRAIT ***********************************/
+//		public class DessinTrait implements MouseListener, MouseMotionListener {
+//		   
+//		    private int x1, y1;
+//		    Graphics g;
+//		    
+//		    public void init() {
+//		     
+//		        // écouteurs
+//		    	imagetransitoire.addMouseListener(this);
+//		    	imagetransitoire.addMouseMotionListener(this);
+//		 
+//		    
+//		    }
+//		 
+//		    public void mousePressed(MouseEvent e){
+//		        int x,y;
+//		        x = e.getX();
+//		        y = e.getY();
+//		        x1=x; y1=y;
+//		    }
+//		 
+//		    //événement déplacement souris avec bouton enfoncé
+//		    public void mouseDragged(MouseEvent e){
+//		    	Graphics g = imagetransitoire.getGraphics();
+//				g.setColor(Color.ORANGE);
+//		    	g.drawLine(this.x1, this.y1, e.getX(), e.getY());
+//				mouseMoved(e);
+//				addPositionDraw();
+//			}
+//		 
+//			//événement lors du déplacement de la souris
+//			public void mouseMoved(MouseEvent e){
+//				this.x1 = e.getX();
+//				this.y1 = e.getY();
+//			}
+//		    public void mouseEntered(MouseEvent event) {}  
+//		    public void mouseExited(MouseEvent evt){}
+//		    public void mouseClicked(MouseEvent event){}
+//			public void mouseReleased(MouseEvent arg0) {}
+//			public void addPositionDraw(){
+//				if (CountZoom != 1){
+//					float xdessin = (float) (largeurImageTransitoire+(((float)(this.x1))/((imagetransitoire.getWidth()))*(widthThumbnail)));
+//					float ydessin = (float) (hauteurImageTransitoire+(((float)(this.y1))/(imagetransitoire.getHeight())*(heightThumbnail)));
+//									
+//					l.add(xdessin);
+//				    l.add(ydessin);
+//				}
+//			}
+//		}
+		/****************************** New Position ****************************/
 		public class DessinTrait implements MouseListener, MouseMotionListener {
-		    private JPanel drawArea;
+			   
 		    private int x1, y1;
 		    Graphics g;
-		 
+		    
 		    public void init() {
 		     
 		        // écouteurs
@@ -332,9 +468,11 @@ public class SOFTFenetre1 extends JFrame {
 		 
 		    //événement déplacement souris avec bouton enfoncé
 		    public void mouseDragged(MouseEvent e){
-		    	Graphics g = imagetransitoire.getGraphics();//A remplasser par drawArea.getGraphics();
-				g.drawLine(this.x1, this.y1, e.getX(), e.getY());
+		    	Graphics g = imagetransitoire.getGraphics();
+				g.setColor(Color.ORANGE);
+		    	g.drawLine(this.x1, this.y1, e.getX(), e.getY());
 				mouseMoved(e);
+				addPositionDraw();
 			}
 		 
 			//événement lors du déplacement de la souris
@@ -342,11 +480,19 @@ public class SOFTFenetre1 extends JFrame {
 				this.x1 = e.getX();
 				this.y1 = e.getY();
 			}
-		 
 		    public void mouseEntered(MouseEvent event) {}  
 		    public void mouseExited(MouseEvent evt){}
 		    public void mouseClicked(MouseEvent event){}
 			public void mouseReleased(MouseEvent arg0) {}
+			public void addPositionDraw(){
+				if (CountZoom != 1){
+					float xdessin = (float) ((((float)(this.x1))/((imagetransitoire.getWidth()))*(widthThumbnail)));
+					float ydessin = (float) ((((float)(this.y1))/(imagetransitoire.getHeight())*(heightThumbnail)));
+									
+					l.add(xdessin);
+				    l.add(ydessin);
+				}
+			}
 		}
 		
 		/************************ DESSIN RECTANGLE ****************************************/
@@ -375,25 +521,12 @@ public class SOFTFenetre1 extends JFrame {
 				System.out.println(endDrag);
 				 width = e.getX();
 				 height = e.getY();
-				 System.out.println("largeur = "+width);
-				 int a;
-				 int b;
-				 if (width>x0){
-					 a =  width - x0;
-				 }else{
-					 a =  x0- width;
-				 }
-				 if (height>y0){
-					 b =  height - y0;
-				 }else{
-					 b =  y0-height;
-				 }
-				 if(x0>550 && y0>130 && a<(1000) && b<(1000)){
-				 g.drawRect(x0, y0,a,b);
-				 getSurface(x0, y0,a,b); //permet de stocker le placement du rectangle
-				 }
+				
+				 
+				 g.drawRect(x0, y0,width,height);
+				 getSurface(x0, y0,width,height); //permet de stocker le placement du rectangle
+				 
 			}
-
 			public void mouseDragged(MouseEvent e) {}
 			public void mouseMoved(MouseEvent e) {}
 			public void mouseEntered(MouseEvent e) {}
@@ -412,35 +545,45 @@ public class SOFTFenetre1 extends JFrame {
 		/**************************** Zoom  ************************************/
 		
 		public class Zoom implements MouseListener, MouseMotionListener{
+			private int a;
 			Zoom(){
 			
+				imagetransitoire.addMouseListener(this);  // Understand click on image transitoire
 				imagetransitoire.addMouseListener(this);
-				imagetransitoire.addMouseListener(this);
-				//addMouseMotionListener(this);
-				//System.out.println("clicksurbutton zoom");	
-			
 			}
 			public void mouseClicked(MouseEvent e) {
-				
+			OpenSlide open = null;
+			try {
+				open = new OpenSlide(getFilechoose());
+			} catch (IOException e2) {
+				System.out.println("ca marche pas");
+				e2.printStackTrace();
+			}
+	
 			int buttonDown = e.getButton();
 			boolean Dezoom = false;
-		    if (buttonDown == MouseEvent.BUTTON1) {
-		    	zoomCounter = zoomCounter+1;
-		    	System.out.println("zoomCounter"+zoomCounter);
-		    	CountZoom = CountZoom*2;
+		    if (buttonDown == MouseEvent.BUTTON1) { // action left-click
+		    	zoomCounter = zoomCounter+1;  
+		    	
+		    	
 		    	int reste = (zoomCounter-1) % 2; 
 		    	if (reste == 0 ){
+//		    		if( (int)(open.getLevel0Width()/(CountZoom))<1000 &&  (int)(open.getLevel0Height()/(CountZoom))<800){
+//		    			CountZoom = CountZoom;
+//			    	}else{
 		    		CountZoom = Math.pow(2,(zoomCounter/2));  
+//			    	}
 		    	Dezoom = false;
+		    	
 		    	}
 		    	
-		    	System.out.println("0: "+CountZoom);
+		    	
 		    } 
 		    if(buttonDown == MouseEvent.BUTTON3) {
 		    	if(CountZoom != 1){
-		    	//	System.out.println("je comprend  le click");
+		    	
 		    		zoomCounter = zoomCounter-1;
-			    	System.out.println("zoomCounter"+zoomCounter);
+			    	
 			    	CountZoom = CountZoom*2;
 			    	int reste = (zoomCounter-1) % 2; 
 			    	if (reste == 0 ){
@@ -450,86 +593,57 @@ public class SOFTFenetre1 extends JFrame {
 		    	}
 		    }
 			
-		    System.out.println("1: "+CountZoom);
+		   
 			
 		    try {
-				OpenSlide open = new OpenSlide(getFilechoose());
-				Point position = e.getPoint();
-				System.out.println("2: "+CountZoom);
 				
-				
-		//		System.out.println("z = " + z);
-		//		System.out.println(y);
-				// problem de zoom toujours en haut a gauche
-				
-				int width = (int)(open.getLevel0Width()/(CountZoom));
-				int height = (int)(open.getLevel0Height()/(CountZoom));
-				int a;
-				System.out.println("la largeur est de "+width);
-				System.out.println("la longueur est de "+height);
-				if ((width-height)>=0){
-					a = 1; // width plus grand ou egal
+		    					
+		    	widthThumbnail = (int)(open.getLevel0Width()/(CountZoom));
+				heightThumbnail = (int)(open.getLevel0Height()/(CountZoom));
+				if ((widthThumbnail-heightThumbnail)>=0){
+					setA(1); // width plus grand ou egal
 				}else {
-					a =2; //height plus grand
+					setA(2); //height plus grand
 				}
-				if(width<1000 ){
-					width = 1000;
+				if(widthThumbnail<100 ){ // Solution temporaire (expendre la selection agrandir le width et le heighte
+					widthThumbnail = 100;
+					
 				}
-				if( height<800){
-					height = 762;
+				if( heightThumbnail<80){
+					heightThumbnail = 76;
 				}
+				
 				float w = (e.getX());
 				
 				float z = (e.getY());
 				int reste = (zoomCounter-1) % 2; 
 		    	if (reste == 0 ){
 		    		
-		    		System.out.println("w "+w);
+		    		
 		    		if(Dezoom == false){
-					x = (int) (largeurImageTransitoire+(w/((imagetransitoire.getWidth()))*(width)));
+					x = (int) (largeurImageTransitoire+(w/((imagetransitoire.getWidth()))*(widthThumbnail)));
 					largeurImageTransitoire = x;
-					//int x = (int) (w);
-					System.out.println("open.getLevel0Width() "+open.getLevel0Width());
-					System.out.println("x "+x);
-				//	System.out.println(e.getX());
-				//	System.out.println(x);
-					System.out.println("3: "+CountZoom);
-					
-					System.out.println("z"+z);
-					//int y = (int) (z);
-					
-					System.out.println("hauteur panel "+imagetransitoire.getHeight());
-					System.out.println("largeur panel "+imagetransitoire.getWidth());
-					y = (int) (hauteurImageTransitoire+(z/(imagetransitoire.getHeight())*(int)(height)));
+				
+					y = (int) (hauteurImageTransitoire+(z/(imagetransitoire.getHeight())*(int)(heightThumbnail)));
 					hauteurImageTransitoire = y;
-					System.out.println("y"+y);
+				     
 		    		}
 		    		if(Dezoom == true){
-						x = (int) (largeurImageTransitoire-(w/(imagetransitoire.getWidth())*(width)));
+						x = (int) (largeurImageTransitoire-(w/(imagetransitoire.getWidth())*(widthThumbnail)));
 						largeurImageTransitoire = x;
-						//int x = (int) (w);
-						System.out.println("open.getLevel0Width() "+open.getLevel0Width());
-						System.out.println("x "+x);
-					//	System.out.println(e.getX());
-					//	System.out.println(x);
-						System.out.println("3: "+CountZoom);
 						
-						System.out.println("z"+z);
-						//int y = (int) (z);
-						
-						System.out.println("hauteur panel "+imagetransitoire.getHeight());
-						System.out.println("largeur panel "+imagetransitoire.getWidth());
-						y = (int) (hauteurImageTransitoire-(z/(imagetransitoire.getHeight())*(int)(height)));
+						y = (int) (hauteurImageTransitoire-(z/(imagetransitoire.getHeight())*(int)(heightThumbnail)));
 						hauteurImageTransitoire = y;
-						System.out.println("y"+y);
+						
 			    		}
-					if (CountZoom == 1){
-						int pcZoom = 1;
-						Image = open.createThumbnailImage(0,0,width ,height ,1000);
+		    		int pcZoom;
+					if (CountZoom == 1){ 
+						 pcZoom = 1;
+						Image = open.createThumbnailImage(0,0,widthThumbnail ,heightThumbnail ,1000);
 					}else{
-						int pcZoom = (int)CountZoom*2;
-						Image = open.createThumbnailImage(x,y,width ,height ,1000);
-			//		System.out.println(Image);
+						 pcZoom = (int)CountZoom*2;
+						Image = open.createThumbnailImage(x,y,widthThumbnail ,heightThumbnail ,1000);
+						
 					}
 					
 					 ZoomImage.remove(imagetransitoire);
@@ -537,48 +651,22 @@ public class SOFTFenetre1 extends JFrame {
 					 panel.validate();
 					 panel.remove(label);
 					 panel.revalidate();
-					 
-					 
-					 int pcZoom = (int)CountZoom;
+					 pcZoom = (int)CountZoom;
 					 panel.setLayout(new GridBagLayout());
 					 label = new JLabel( "<html>Niveau de Zoom : " +(pcZoom) +   "</html>");
 					 panel.setLayout(new BorderLayout());
 					 panel.add(label,BorderLayout.NORTH);
-					 imagetransitoire = caseImage(Image);
+					 IP = new ImagePlus("NewImagePlus", Image);
+					 weka2.setTrainingImage(IP);
 					 
-					 ZoomImage.add(imagetransitoire);
-					// ZoomImage.setSize(new Dimension(imagetransitoire.getWidth(),imagetransitoire.getHeight()));
-					
+					 imagetransitoire = caseImage(Image); 
+					 
+					 ZoomImage.add(imagetransitoire);					
 					 ZoomImage.revalidate();
 					 panel.add(ZoomImage);
-					 System.out.println("5: "+CountZoom);
 					 panel.repaint();
-		    	}}
-
-	/***************************/
-//					 Segmentation.remove(panelImageOrigin);
-//					 Segmentation.validate();
-//					 ZoomImage.remove(imagetransitoire);
-//					 Segmentation.validate();
-//					 ZoomImage.remove(label);
-//					 Segmentation.revalidate();
-//					 
-//					 Segmentation.repaint();
-//					
-//					 Segmentation.setLayout(new GridBagLayout());
-//					 
-//					 label = new JLabel( "<html>Niveau de Zoom : " +pcZoom +   "</html>");
-//					 
-//					 ZoomImage.add(label);
-//					 imagetransitoire = caseImage(Image);
-//					 ZoomImage.add(imagetransitoire);
-//					 
-//					 JPanel zz = ZoomImage;
-//					 Segmentation.add(zz);
-//					 Segmentation.revalidate();
-					
-				 catch (IOException e1) {
-					// TODO Auto-generated catch block
+		    	}
+		    }catch (IOException e1) {
 					e1.printStackTrace();
 					System.out.println("Loading to new thumbnail fail");
 				}
@@ -589,21 +677,27 @@ public class SOFTFenetre1 extends JFrame {
 			public void mouseExited(MouseEvent e) {}
 			public void mousePressed(MouseEvent e) {}
 			public void mouseReleased(MouseEvent e) {}
+			public int getA() {
+				return a;
+			}
+			public void setA(int a) {
+				this.a = a;
+			}
 		}
+		
+   /************************************ POSITION *******************************/
+		
 		public class position implements MouseListener, MouseMotionListener{
 			position(JPanel PositionOfPanel){
 				PositionOfPanel.addMouseListener(this);
 				PositionOfPanel.addMouseListener(this);
-				//addMouseMotionListener(this);
-				System.out.println("clicksurbutton zoom");	
 			}
 			
 			public void mouseExited(MouseEvent e) {
 				Bandeau.setLayout(new BorderLayout());
 				Bandeau.remove(label2);
 				Bandeau.revalidate();
-			    //	System.out.println(e.getX());
-				label2 = new JLabel("<html> x = " + e.getX() + " y =  " + e.getY() + "</html>");
+			    label2 = new JLabel("<html> x = " + e.getX() + " y =  " + e.getY() + "</html>");
 				Bandeau.add(label2, BorderLayout.NORTH);
 			}
 			
@@ -614,7 +708,255 @@ public class SOFTFenetre1 extends JFrame {
 			public void mouseReleased(MouseEvent e) {}
 			public void mouseClicked(MouseEvent e) {}
 			}
+		/******************************** Panel Segmentation **************************/
 		
+		class Segmentation  {
+			
+			
+		
+		public JPanel createAPanelContaintSegmentationTools(){
+			
+   		
+			trainButton = new JButton("Train classifier");
+			trainButton.setToolTipText("Start training the classifier");
+			trainButton.addActionListener(new ActionListener(){
+	        	public void actionPerformed(ActionEvent e){
+	        		System.out.println("Entraine le classifier");
+	        		System.out.println("feature stack array : "+weka2.getFeatureStackArray());
+	        		
+	        		 boolean z = weka2.trainClassifier();
+	        		 System.out.println(z);
+	        		 
+	        		 weka2.applyClassifier(true);
+	        		}
+	        });
+			
+				
+			
+			overlayButton = new JButton("Toggle overlay");
+			overlayButton.setToolTipText("Toggle between current segmentation and original image");
+			//overlayButton.setEnabled(false);
+			overlayButton.addActionListener(new ActionListener(){
+	        	private ImagePlus zer;
+
+				public void actionPerformed(ActionEvent e){
+	        		
+					ImagePlus RoiClassified = weka2.getClassifiedImage();
+	        		ImageProcessor overlay = RoiClassified.getImageStack().getProcessor(RoiClassified.getCurrentSlice()).duplicate();
+	        		
+	        		ColorProcessor zz = overlay.convertToColorProcessor();
+	        		
+	        		int threshold = zz.getAutoThreshold();
+	        		zz.autoThreshold();
+	        		System.out.println("threshold : "+ threshold);
+	        		zz.setBinaryThreshold();
+	        		BufferedImage overlayImage = zz.getBufferedImage();
+					       		
+	        		System.out.println(overlayImage.getHeight());
+	        	     
+	        		if (CounterButtonOverlay % 2 ==0 ){
+	        			stockTransitoryImage = imagetransitoire;
+	        			 ZoomImage.remove(imagetransitoire);
+						 panel.validate();
+						 panel.revalidate();
+						 System.out.println("1");
+						 
+						 imagetransitoire = caseImage(overlayImage); 
+						 
+						 ZoomImage.add(imagetransitoire);					
+						 ZoomImage.revalidate();
+						 panel.add(ZoomImage);
+						 panel.repaint();
+						 CounterButtonOverlay = CounterButtonOverlay+1;
+	        		}else{
+	        			 ZoomImage.remove(imagetransitoire);
+						 panel.validate();
+						 
+						 panel.revalidate();
+						 
+						 System.out.println("2");
+						 
+						 
+						 imagetransitoire = stockTransitoryImage;
+						 
+						 ZoomImage.add(imagetransitoire);					
+						 ZoomImage.revalidate();
+						 panel.add(ZoomImage);
+						 panel.repaint();
+						 CounterButtonOverlay = CounterButtonOverlay+1;
+	        		}
+	        	}
+
+				@SuppressWarnings("unused")
+				public ImagePlus getZer() {
+					return zer;
+				}
+
+				@SuppressWarnings("unused")
+				public void setZer(ImagePlus zer) {
+					this.zer = zer;
+				}
+	        });
+
+			resultButton = new JButton("Create result");
+			resultButton.setToolTipText("Generate result image");
+			//resultButton.setEnabled(false);
+			resultButton.addActionListener(new ActionListener(){
+				public void actionPerformed(ActionEvent e){
+				
+        		}
+			});
+
+			probabilityButton = new JButton("Get probability");
+			probabilityButton.setToolTipText("Generate current probability maps");
+			//probabilityButton.setEnabled(false);
+			probabilityButton.addActionListener(new ActionListener(){
+	        	public void actionPerformed(ActionEvent e){
+	        		ImagePlus RoiClassified = weka2.getClassifiedImage();
+	        		//RoiClassified.show();
+	        		RoiClassified.show();
+	        		
+	        		}
+	        });
+
+			
+			
+			panelSegmentation.setLayout(new GridLayout(30, 0,0,0));
+			panelSegmentation.add(trainButton);
+			panelSegmentation.add(overlayButton);
+			panelSegmentation.add(resultButton);
+			
+			panelSegmentation.add(probabilityButton);			
+			addtoClass();
+			panelTotalSegmentation.setLayout(new BorderLayout());
+			panelTotalSegmentation.add(panelSegmentation,BorderLayout.WEST);
+//			SOFTFenetre1 image = new SOFTFenetre1();
+//			panelTotalSegmentation.add(image.getPanel());
+			
+			panelTotalSegmentation.add(panelclass);
+			return panelTotalSegmentation;
+
+		}
+/******************* convert 8 bit *********************/
+		void convertTo8bitNoScaling( ImagePlus image )
+		{
+			boolean aux = ImageConverter.getDoScaling();
+			
+			ImageConverter.setDoScaling( false );
+			
+			if( image.getImageStackSize() > 1)			
+				(new StackConverter( image )).convertToGray8();
+			else
+				(new ImageConverter( image )).convertToGray8();
+			
+			ImageConverter.setDoScaling( aux );
+	     }
+		
+	/******************************** convert image to bufferedImage **************/	
+		public BufferedImage toBufferedImage(Image img)
+		{
+		    if (img instanceof BufferedImage)
+		    {
+		        return (BufferedImage) img;
+		    }
+
+		    // Create a buffered image with transparency
+		    BufferedImage bimage = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+
+		    // Draw the image on to the buffered image
+		    Graphics2D bGr = bimage.createGraphics();
+		    bGr.drawImage(img, 0, 0, null);
+		    bGr.dispose();
+
+		    // Return the buffered image
+		    return bimage;
+		}
+		/**************************************** Creation Button for add trace to class ***************************/
+		public void addtoClass() {
+			
+			
+			
+			System.out.println("number of class = "+weka2.getNumOfClasses());
+			
+			if (numOfClasses <= 5){
+
+				JButton buttonBg = new JButton("add to class background ");
+				JButton buttonNucleus = new JButton("add to class Nucleus ");
+				buttonBg.setBackground(Color.white);
+				buttonNucleus.setBackground(Color.white);
+				buttonBg.addActionListener(new ActionListener(){
+		        	public void actionPerformed(ActionEvent e){
+		        		System.out.println("click sur button bg");
+		        		float[] tabx = new float[l.size()];
+		    			int a = 0 ; //position du tableau des x
+		    			float[] taby = new float[l.size()];
+		    			int b = 0;  //position du tableau des x
+		    			
+		    			for(int i = 0; i < l.size(); i++){
+		    			     if(i%2 == 0){
+		    			    	 tabx[a]=(float)(l.get(i));
+		    			    	 System.out.println("Élément à l'index (x) " + i + " = " + l.get(i));
+		    			    	 System.out.println("Élément du tableau(x) " + i + " = " + tabx[a]);
+		    			    	 a = a+1;
+		    			     }
+		    			     
+		    			     if(i%2 == 1){
+		    			    	 taby[a]=(float)(l.get(i));
+		    			    	 System.out.println("Élément à l'index (y) " + i + " = " + l.get(i));
+		    				     System.out.println("Élément du tableau(y) " + i + " = " + tabx[b]);
+		    			    	 b = b+1;
+		    			     }
+		    			}
+		    			l.remove();
+		    			ij.gui.PolygonRoi roi = new ij.gui.PolygonRoi(tabx, taby, Roi.FREELINE);	
+		    			System.out.println(roi.isLine());
+		    			//Weka_Segmentation.addTrace("0", "1");
+		        		weka2.addExample(0, roi, 1);
+		        		
+		        		}
+		        });
+				
+				buttonNucleus.addActionListener(new ActionListener(){
+		        	public void actionPerformed(ActionEvent e){
+		        		System.out.println("click sur button nucl");
+		        		float[] tabx = new float[l.size()];
+		    			int a = 0 ; //position du tableau des x
+		    			float[] taby = new float[l.size()];
+		    			int b = 0;  //position du tableau des x
+		    			//ij.gui.PolygonRoi roi = new ij.gui.PolygonRoi(null, null, Roi.POLYLINE);	
+		    			for(int i = 0; i < l.size(); i++){
+		    			     if(i%2 == 0){
+		    			    	 tabx[a]= (float) l.get(i);
+		    			    	 System.out.println("Élément à l'index (x) " + i + " = " + l.get(i));
+		    			    	 System.out.println("Élément du tableau(x) " + i + " = " + tabx[a]);
+		    			    	 a = a+1;
+		    			     }
+		    			     
+		    			     if(i%2 == 1){
+		    			    	 taby[b]=(float) l.get(i);
+		    			    	 System.out.println("Élément à l'index (y) " + i + " = " + l.get(i));
+		    				     System.out.println("Élément du tableau(y) " + i + " = " + tabx[b]);
+		    			    	 b = b+1;
+		    			     }
+		    			}	
+		    			l.remove();
+		    			
+		    			ij.gui.PolygonRoi roi = new ij.gui.PolygonRoi(tabx, taby, Roi.FREELINE);
+		    			
+		    			//Weka_Segmentation.addTrace("1", "1");
+		        		weka2.addExample(1, roi, 1);
+		        		}
+		        });
+			panelclass.setLayout(new GridLayout(30, 0,0,0));
+		    panelclass.add(buttonNucleus);
+			panelclass.add(buttonBg);
+			panelTotalSegmentation.add(panelclass);
+			} else {
+				System.out.println(" Number of class max atteingned");
+			}
+		}
+	}
+	/******************* GETTER AND SETTER ******************************/	
 		public JPanel getZoomSeg() {
 			return zoomSeg;
 		}
@@ -714,115 +1056,20 @@ public class SOFTFenetre1 extends JFrame {
 		public void setPathFichier(String pathFichier) {
 			this.pathFichier = pathFichier;
 		}
+		public Weka_Segmentation getWeka() {
+			return weka;
+		}
+		public void setWeka(Weka_Segmentation weka) {
+			this.weka = weka;
+		}
+		public JButton getAddClassButton() {
+			return addClassButton;
+		}
+		public void setAddClassButton(JButton addClassButton) {
+			this.addClassButton = addClassButton;
+		}
 		
-/**************************** Curseur de la souris ************************************/
-		// Acting on mouse movement - display mouse coordinates
-//		
-//		class MousePad extends JPanel implements MouseMotionListener {
-//		   JTextField mouse_x, mouse_y;
-//		   
-//		   MousePad (JTextField x, JTextField y) {
-//		      mouse_x = x;
-//		      mouse_y = y;
-//		      addMouseMotionListener(this);
-//		      }
-//		   
-//		   public void mouseDragged (MouseEvent event) { }
-//		   
-//		   public void mouseMoved (MouseEvent event) {
-//		      mouse_x.setText(String.valueOf(event.getX()));
-//		      mouse_y.setText(String.valueOf(event.getY()));
-//		   }
-//		}
-//
-//		class ShowMouseCoordsFrame {
-//		   JTextField mouse_x, mouse_y;
-//		   int positionx;
-//		   int positiony;
-//		   public JPanel ShowMouseCoordsFrame() {
-//		      setLayout(new BorderLayout());
-//		      JPanel p = new JPanel();
-//		      p.setLayout(new GridLayout(1,4));
-//		      p.add(new JLabel("x: "+ positionx+ "y : "+ positiony));
-//		      p.add(mouse_x = new JTextField());
-//		      p.add(mouse_y = new JTextField());
-//		      add("North", p);
-//		      MousePad mp = new MousePad(mouse_x, mouse_y);
-//		      add("Center",mp);
-//			return p;
-//		   }
-//		}
 }
-
-
-
-//private int tabValeur[] = new int[4];
-//public int[] recupPositionRoiSurImage(int x, int y, int xfin, int yfin){
-//	
-//	
-//			//={x, y, xfin, yfin};
-//	System.out.println("recupPositioninfo");
-//	System.out.println(xfin);
-//	return tabValeur;	
-//}
-//public int getWidth() {
-//	int a = tabValeur[2];
-//	System.out.println("Width "+a);
-//	return a;
-//}
-//public int getheight() {
-//	int a = tabValeur[3];
-//	System.out.println("height "+a);
-//	return a;
-//}
-//public int getPositionOrigineX() {
-//	int a = tabValeur[0];
-//	System.out.println("xorigine "+a);
-//	return a;
-//}}
-/****************************************************************/
-//		public class Zone  {
-//			 
-//			public JPanel Zone(){
-//				JPanel p = new JPanel();
-//				Contenu contenu = new Contenu();
-//				p.add(contenu);
-//				getContentPane().add(p);
-//				return p;
-//			}
-//		 
-//			class Contenu extends JPanel implements MouseListener, MouseMotionListener{
-//				int xPrec, yPrec;
-//				Graphics g;
-//		 
-//				public void Contenu(){
-//					xPrec=0; yPrec=0;
-//					g = getGraphics();
-//					addMouseListener(this);
-//					addMouseMotionListener(this);
-//					afficherZone();
-//					  
-//				}
-//		 
-//				public void mousePressed(MouseEvent e) {}
-//				public void mouseMoved(MouseEvent e) {
-//					int x,y;
-//					x = e.getX();
-//					y = e.getY();
-//					xPrec=x;
-//					yPrec=y;
-//				}
-//				public void mouseClicked(MouseEvent e) {}
-//				public void mouseEntered(MouseEvent e) {}
-//				public void mouseExited(MouseEvent e) {}
-//				public void mouseReleased(MouseEvent e) {}
-//				public void mouseDragged(MouseEvent e) {}
-//			}
-//				public void afficherZone(){
-//					   JTextArea area = new JTextArea();
-//					   area.append("Ajopgijzt");
-//				}
-//	}
 
 		
 
