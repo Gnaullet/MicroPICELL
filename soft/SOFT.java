@@ -7,7 +7,6 @@ public class SOFT {
 			public void run(){
 				SOFTFenetre1 fenetre = new SOFTFenetre1();
 				fenetre.setVisible(true);
-				
 			}
 		
 		});

@@ -23,6 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.StringTokenizer;
 
 import javax.swing.ButtonGroup;
 import javax.swing.ImageIcon;
@@ -67,6 +69,7 @@ public class SOFTFenetre1 extends JFrame {
 	   private JPanel ZoomImage = new JPanel();
 	   private JPanel panelImageOrigin = new JPanel();
 	   private BufferedImage Image;
+	   private BufferedImage Image2 ;
 	   private long largeurImageTransitoire=0;
 	   private long hauteurImageTransitoire=0;
 	   public String nomFichier;
@@ -75,7 +78,7 @@ public class SOFTFenetre1 extends JFrame {
  	   private ImagePlus IP;
  	   int x;
 	   int y;
-	   
+	   private JButton OuvertureButton = null;
  	   public JFileChooser getChooser() {
 		return chooser;
 	}
@@ -113,7 +116,10 @@ public class SOFTFenetre1 extends JFrame {
 	   
 	   private Graphics g;
 	   /************ Pour class segmentation ***************/
+	public boolean classifierWholeImage = false;
 	private boolean doneone=false;
+	public String widhPixelOnMicron ;
+	public String heightPixelOnMicron;
 	private int numOfClasses = 2;
 	public JPanel panelTotalSegmentation = new JPanel();
 	public JPanel panelclass = new JPanel();
@@ -121,6 +127,7 @@ public class SOFTFenetre1 extends JFrame {
 	private JButton overlayButton = null;
 	private JButton resultButton = null;
 	private JButton probabilityButton = null;
+	private JButton  ApplyClassifierInWholeImage = null;
 	private int CounterButtonOverlay = 0;
 	private Weka_Segmentation weka = new Weka_Segmentation();
 	private WekaSegmentation weka2 = new WekaSegmentation();
@@ -130,8 +137,8 @@ public class SOFTFenetre1 extends JFrame {
 private JButton addClassButton = null;
 public JPanel panelSegmentation = new JPanel();
 public JPanel stockTransitoryImage = new JPanel();
-//Weka_Segmentation weka = new Weka_Segmentation();
-	//   private OuvertureNDPI() ouv = new OuvertureNDPI("ouv");
+// Weka_Segmentation weka = new Weka_Segmentation();
+// private OuvertureNDPI() ouv = new OuvertureNDPI("ouv");
 
 	  /************************** Initialisation de SOFTFenetre1 ******************************/
 
@@ -146,12 +153,85 @@ public JPanel stockTransitoryImage = new JPanel();
 				setResizable(true); //On autorise le redimensionnement de la fenêtre
 				setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); //On dit à l'application de se fermer lors du clic sur la croix
 				setContentPane(buildContentPane());
-				
 			}
 		 
 		 private JPanel buildContentPane(){
+			 
+			
+			 String property = System.getProperty("java.library.path");
+			 StringTokenizer parser = new StringTokenizer(property, ";");
+			 while (parser.hasMoreTokens()) {
+			     System.err.println(parser.nextToken());
+			     }
+			 try {
+			    	//System.loadLibrary("libopenslide-jni.so");
+			    } catch (UnsatisfiedLinkError e) {
+			      System.err.println("Native Open Slide code library failed to load.\n" + e);
+			      System.exit(1);
+			    }
 			    JPanel Tools = new JPanel();
 			 	panel.setBackground(Color.white);
+			 	OuvertureButton = new JButton("Open your image on NDPI format ");
+			 	OuvertureButton.addActionListener(new ActionListener(){
+				    
+					private OpenSlide open;
+
+					public void actionPerformed(ActionEvent e){
+				        
+				        int returnVal = chooser.showOpenDialog(getParent());
+				        if(returnVal == JFileChooser.APPROVE_OPTION) {
+
+				        	nomFichier=chooser.getSelectedFile().getName();
+				        	pathFichier=chooser.getSelectedFile().getPath();
+
+				        	Filechoose = chooser.getSelectedFile();
+					        
+					        
+					        OuvertureNDPI ouv = new OuvertureNDPI(nomFichier, pathFichier, Filechoose, chooser);
+							
+					        try {
+								 //chargement du thumnail creer dans monImage
+								 
+					        	if(ZoomImage.getComponentCount()>=1){
+									 System.out.println("déja une image");
+									 ZoomImage.remove(imagetransitoire); 
+									 ZoomImage.validate();
+								 }
+					        	
+								 imagetransitoire.add(ouv.ouvertureImage(nomFichier,pathFichier,Filechoose,chooser));
+								
+								 //ZoomImage.setBorder(javax.swing.BorderFactory.createEmptyBorder());
+								 ZoomImage.add(imagetransitoire);
+								 ZoomImage.validate();
+								 ZoomImage.repaint();
+								 panel.add(ZoomImage);
+								 new position();
+								 buffImage = ouv.ReturnBuffImage(nomFichier,pathFichier,Filechoose,chooser);
+								 IP = new ImagePlus(nomFichier, buffImage);
+								 //IP.show();
+								 System.out.println("getCurentslice"+IP.getCurrentSlice());
+								 weka2.setTrainingImage(IP);
+								 open = new OpenSlide(Filechoose);
+								 Map<String, String> properties = open.getProperties();
+								 properties.size();
+								 widhPixelOnMicron = properties.get("openslide.mpp-x");
+								 heightPixelOnMicron = properties.get("openslide.mpp-y");
+								 System.out.println("width = "+widhPixelOnMicron+ "height = "+ heightPixelOnMicron);
+   								 setVisible(true);
+								 
+							} catch (IOException e1) {
+								e1.printStackTrace();
+							}
+					        panel.remove(OuvertureButton);
+					        panel.validate();
+					        panel.repaint();
+						}
+				        else{
+				        	System.out.println("ERROR");
+				        }
+					}
+				});	 
+			 	panel.add(OuvertureButton);
 				Tools = ToolsBar();
 		        panelAffichage.setLayout(new BorderLayout());
 		        ZoomImage.setBackground(Color.white);
@@ -177,6 +257,8 @@ public JPanel stockTransitoryImage = new JPanel();
 					});
 			      openItem.addActionListener(new ActionListener(){
 			    
+						private OpenSlide open;
+
 						public void actionPerformed(ActionEvent e){
 					        
 					        int returnVal = chooser.showOpenDialog(getParent());
@@ -193,30 +275,36 @@ public JPanel stockTransitoryImage = new JPanel();
 						        try {
 									 //chargement du thumnail creer dans monImage
 									 
-						        	if(ZoomImage.getComponentCount()==1){
+						        	if(ZoomImage.getComponentCount()>=1){
 										 System.out.println("déja une image");
 										 ZoomImage.remove(imagetransitoire); 
 										 ZoomImage.validate();
 									 }
 						        	
 									 imagetransitoire.add(ouv.ouvertureImage(nomFichier,pathFichier,Filechoose,chooser));
-									 
+									
 									 //ZoomImage.setBorder(javax.swing.BorderFactory.createEmptyBorder());
 									 ZoomImage.add(imagetransitoire);
 									 ZoomImage.validate();
 									 ZoomImage.repaint();
 									 panel.add(ZoomImage);
-									 new position(imagetransitoire);
-									buffImage = ouv.ReturnBuffImage(nomFichier,pathFichier,Filechoose,chooser);
-									IP = new ImagePlus(nomFichier, buffImage);
-									//IP.show();
-									System.out.println("getCurentslice"+IP.getCurrentSlice());
-									weka2.setTrainingImage(IP);
-	
-									// java.awt.Image image = IP.getImage();
-							    	// IP.getCanvas();
-									setVisible(true);
-									 
+									 new position();
+									 buffImage = ouv.ReturnBuffImage(nomFichier,pathFichier,Filechoose,chooser);
+									 IP = new ImagePlus(nomFichier, buffImage);
+									 //IP.show();
+									 System.out.println("getCurentslice"+IP.getCurrentSlice());
+									 weka2.setTrainingImage(IP);
+									 open = new OpenSlide(Filechoose);
+									 Map<String, String> properties = open.getProperties();
+									 properties.size();
+									 widhPixelOnMicron = properties.get("openslide.mpp-x");
+									 heightPixelOnMicron = properties.get("openslide.mpp-y");
+									 System.out.println("width = "+widhPixelOnMicron+ "height = "+ heightPixelOnMicron);
+	   								 setVisible(true);
+	   								 
+	   								 panel.remove(OuvertureButton);
+	   						         panel.validate();
+	   						         panel.repaint();
 								} catch (IOException e1) {
 									e1.printStackTrace();
 								}	
@@ -224,6 +312,7 @@ public JPanel stockTransitoryImage = new JPanel();
 					        else{
 					        	System.out.println("ERROR");
 					        }
+					        
 						}
 					});	 
 			     
@@ -261,11 +350,12 @@ public JPanel stockTransitoryImage = new JPanel();
 			 
 			    JPanel Tools = new JPanel();
 			    
-		        JButton buttonBox = new javax.swing.JButton(new ImageIcon("/home/guillaume/Documents/Mycropycell/ImagesSoft/carre.png"));
-		        JButton jButton2 = new javax.swing.JButton(new ImageIcon("/home/guillaume/Documents/Mycropycell/ImagesSoft/cercle.png"));
-		        JButton jButton3 = new javax.swing.JButton(new ImageIcon("/home/guillaume/Documents/Mycropycell/ImagesSoft/trait.png"));
-		        JButton jButton4 = new javax.swing.JButton(new ImageIcon("/home/guillaume/Documents/Mycropycell/ImagesSoft/loupe.png"));
-		        JButton jButton5 = new javax.swing.JButton(new ImageIcon("/home/guillaume/Documents/Mycropycell/ImagesSoft/texte.png"));
+			    //System.out.println(Carre);
+		        JButton buttonBox = new javax.swing.JButton(new ImageIcon(this.getClass().getResource("/carre.png")));
+		        JButton jButton2 = new javax.swing.JButton(new ImageIcon(getClass().getResource("/cercle.png")));
+		        JButton jButton3 = new javax.swing.JButton(new ImageIcon(getClass().getResource("/trait.png")));
+		        JButton jButton4 = new javax.swing.JButton(new ImageIcon(getClass().getResource("/loupe.png")));
+		        JButton jButton5 = new javax.swing.JButton(new ImageIcon(getClass().getResource("/texte.png")));
 
 		        buttonBox.setText("buttonBox");
 		        buttonBox.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
@@ -325,17 +415,8 @@ public JPanel stockTransitoryImage = new JPanel();
 		        jButton5.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
 		        jButton5.addActionListener(new ActionListener(){
 		        public void actionPerformed(ActionEvent e){
-		        	for(int i = 0; i < l.size(); i++){
-					     if(i%2 == 0){
-					      System.out.println("Élément à l'index (x) " + i + " = " + l.get(i));
-					     }
-					     
-					     if(i%2 == 1){
-						      System.out.println("Élément à l'index (y) " + i + " = " + l.get(i));
-						     }
-					     }	
-	        		}
-	        	});
+		        	
+		        }});
 		        Tools.add(jButton5);
 				return Tools;
 		 }
@@ -547,14 +628,17 @@ public JPanel stockTransitoryImage = new JPanel();
 		public class Zoom implements MouseListener, MouseMotionListener{
 			private int a;
 			Zoom(){
-			
-				imagetransitoire.addMouseListener(this);  // Understand click on image transitoire
+			    imagetransitoire.addMouseListener(this);  // Understand click on image transitoire
 				imagetransitoire.addMouseListener(this);
 			}
 			public void mouseClicked(MouseEvent e) {
 			OpenSlide open = null;
+			
 			try {
 				open = new OpenSlide(getFilechoose());
+				//long ee = open.getLevel0Height()*open.getLevel0Width();
+					 System.out.println(open.getLevel0Height());
+					 System.out.println(open.getLevel0Width());
 			} catch (IOException e2) {
 				System.out.println("ca marche pas");
 				e2.printStackTrace();
@@ -563,7 +647,7 @@ public JPanel stockTransitoryImage = new JPanel();
 			int buttonDown = e.getButton();
 			boolean Dezoom = false;
 		    if (buttonDown == MouseEvent.BUTTON1) { // action left-click
-		    	zoomCounter = zoomCounter+1;  
+		        zoomCounter = zoomCounter+1;  
 		    	
 		    	
 		    	int reste = (zoomCounter-1) % 2; 
@@ -596,9 +680,7 @@ public JPanel stockTransitoryImage = new JPanel();
 		   
 			
 		    try {
-				
-		    					
-		    	widthThumbnail = (int)(open.getLevel0Width()/(CountZoom));
+				widthThumbnail = (int)(open.getLevel0Width()/(CountZoom));
 				heightThumbnail = (int)(open.getLevel0Height()/(CountZoom));
 				if ((widthThumbnail-heightThumbnail)>=0){
 					setA(1); // width plus grand ou egal
@@ -636,6 +718,7 @@ public JPanel stockTransitoryImage = new JPanel();
 						hauteurImageTransitoire = y;
 						
 			    		}
+		    		
 		    		int pcZoom;
 					if (CountZoom == 1){ 
 						 pcZoom = 1;
@@ -645,22 +728,26 @@ public JPanel stockTransitoryImage = new JPanel();
 						Image = open.createThumbnailImage(x,y,widthThumbnail ,heightThumbnail ,1000);
 						
 					}
-					
 					 ZoomImage.remove(imagetransitoire);
-					  
 					 panel.validate();
 					 panel.remove(label);
 					 panel.revalidate();
 					 pcZoom = (int)CountZoom;
 					 panel.setLayout(new GridBagLayout());
-					 label = new JLabel( "<html>Niveau de Zoom : " +(pcZoom) +   "</html>");
+//					 public static float strToFloat(String s)
+//					 {
+					 float f = Float.valueOf(widhPixelOnMicron.trim()).floatValue();
+					 float g = Float.valueOf(heightPixelOnMicron.trim()).floatValue();
+//					 return f;
+//					 }
+					 float widthReal = (float) (f*widthThumbnail);
+					 float heightReal = (float) (g*heightThumbnail);
+					 label = new JLabel( "<html>Niveau de Zoom : " +(pcZoom) +  "largeur de la ROI : " + widthReal + " micron ; Number of pixel largeur "+ widthThumbnail + "  hauteur de la ROI : "+ heightReal+ "</html>");
 					 panel.setLayout(new BorderLayout());
 					 panel.add(label,BorderLayout.NORTH);
 					 IP = new ImagePlus("NewImagePlus", Image);
 					 weka2.setTrainingImage(IP);
-					 
 					 imagetransitoire = caseImage(Image); 
-					 
 					 ZoomImage.add(imagetransitoire);					
 					 ZoomImage.revalidate();
 					 panel.add(ZoomImage);
@@ -688,9 +775,9 @@ public JPanel stockTransitoryImage = new JPanel();
    /************************************ POSITION *******************************/
 		
 		public class position implements MouseListener, MouseMotionListener{
-			position(JPanel PositionOfPanel){
-				PositionOfPanel.addMouseListener(this);
-				PositionOfPanel.addMouseListener(this);
+			position(){
+				imagetransitoire.addMouseListener(this);
+				imagetransitoire.addMouseListener(this);
 			}
 			
 			public void mouseExited(MouseEvent e) {
@@ -723,11 +810,10 @@ public JPanel stockTransitoryImage = new JPanel();
 	        	public void actionPerformed(ActionEvent e){
 	        		System.out.println("Entraine le classifier");
 	        		System.out.println("feature stack array : "+weka2.getFeatureStackArray());
-	        		
-	        		 boolean z = weka2.trainClassifier();
-	        		 System.out.println(z);
-	        		 
-	        		 weka2.applyClassifier(true);
+	        		boolean z = weka2.trainClassifier();
+	        		System.out.println(z);
+	        		weka2.applyClassifier(true);
+	        		weka2.saveClassifier("toto");
 	        		}
 	        });
 			
@@ -743,7 +829,6 @@ public JPanel stockTransitoryImage = new JPanel();
 	        		
 					ImagePlus RoiClassified = weka2.getClassifiedImage();
 	        		ImageProcessor overlay = RoiClassified.getImageStack().getProcessor(RoiClassified.getCurrentSlice()).duplicate();
-	        		
 	        		ColorProcessor zz = overlay.convertToColorProcessor();
 	        		
 	        		int threshold = zz.getAutoThreshold();
@@ -752,14 +837,14 @@ public JPanel stockTransitoryImage = new JPanel();
 	        		zz.setBinaryThreshold();
 	        		BufferedImage overlayImage = zz.getBufferedImage();
 					       		
-	        		System.out.println(overlayImage.getHeight());
+	        		
 	        	     
 	        		if (CounterButtonOverlay % 2 ==0 ){
-	        			stockTransitoryImage = imagetransitoire;
+	        			 stockTransitoryImage = imagetransitoire;
 	        			 ZoomImage.remove(imagetransitoire);
 						 panel.validate();
 						 panel.revalidate();
-						 System.out.println("1");
+						
 						 
 						 imagetransitoire = caseImage(overlayImage); 
 						 
@@ -773,10 +858,6 @@ public JPanel stockTransitoryImage = new JPanel();
 						 panel.validate();
 						 
 						 panel.revalidate();
-						 
-						 System.out.println("2");
-						 
-						 
 						 imagetransitoire = stockTransitoryImage;
 						 
 						 ZoomImage.add(imagetransitoire);					
@@ -818,7 +899,54 @@ public JPanel stockTransitoryImage = new JPanel();
 	        		
 	        		}
 	        });
-
+			ApplyClassifierInWholeImage = new JButton("Apply Classifier In Whole Image");
+			ApplyClassifierInWholeImage.setToolTipText("Start training the classifier");
+			ApplyClassifierInWholeImage.addActionListener(new ActionListener(){
+	        	public void actionPerformed(ActionEvent e){
+	        		System.out.println("ApplyClassifierInWholeImage");
+	        		classifierWholeImage = true;
+	        		boolean zz = weka2.loadClassifier("toto");
+	        		System.out.println(zz);
+	        		OpenSlide open = null;
+	        		
+					try {
+						open = new OpenSlide(Filechoose);
+					} catch (IOException e2) {
+						// TODO Auto-generated catch block
+						e2.printStackTrace();
+						
+					}
+	        		try {
+	        			int maxsize ;
+	        			if(open.getLevel0Width()-open.getLevel0Height()>=0){
+	        				maxsize = (int) open.getLevel0Width();
+	        			}else{
+	        				maxsize = (int) open.getLevel0Height();
+	        			}
+	        			System.out.println(maxsize);
+	        			Image = open.createThumbnailImage(0, 0, open.getLevel0Width(), open.getLevel0Height(), maxsize);
+	        			IP = new ImagePlus("NewImagePlus", Image);
+						
+					} catch (IOException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					}
+					 weka2.setTrainingImage(IP);
+					 weka2.applyClassifier(true);
+					 weka2.getClassifiedImage().show();
+					 ZoomImage.remove(imagetransitoire);
+					 panel.validate();
+					 panel.revalidate();
+					 imagetransitoire = caseImage(Image);
+					 ZoomImage.add(imagetransitoire);					
+					 ZoomImage.revalidate();
+					 panel.add(ZoomImage);
+					 panel.repaint();
+					 CounterButtonOverlay =0;
+					 CountZoom =1;
+					 zoomCounter =1;
+					}
+	        });
 			
 			
 			panelSegmentation.setLayout(new GridLayout(30, 0,0,0));
@@ -826,7 +954,8 @@ public JPanel stockTransitoryImage = new JPanel();
 			panelSegmentation.add(overlayButton);
 			panelSegmentation.add(resultButton);
 			
-			panelSegmentation.add(probabilityButton);			
+			panelSegmentation.add(probabilityButton);
+			panelSegmentation.add(ApplyClassifierInWholeImage);
 			addtoClass();
 			panelTotalSegmentation.setLayout(new BorderLayout());
 			panelTotalSegmentation.add(panelSegmentation,BorderLayout.WEST);
@@ -835,9 +964,10 @@ public JPanel stockTransitoryImage = new JPanel();
 			
 			panelTotalSegmentation.add(panelclass);
 			return panelTotalSegmentation;
-
 		}
+		
 /******************* convert 8 bit *********************/
+		
 		void convertTo8bitNoScaling( ImagePlus image )
 		{
 			boolean aux = ImageConverter.getDoScaling();
@@ -876,8 +1006,7 @@ public JPanel stockTransitoryImage = new JPanel();
 			
 			
 			
-			System.out.println("number of class = "+weka2.getNumOfClasses());
-			
+		
 			if (numOfClasses <= 5){
 
 				JButton buttonBg = new JButton("add to class background ");
@@ -886,7 +1015,7 @@ public JPanel stockTransitoryImage = new JPanel();
 				buttonNucleus.setBackground(Color.white);
 				buttonBg.addActionListener(new ActionListener(){
 		        	public void actionPerformed(ActionEvent e){
-		        		System.out.println("click sur button bg");
+		        		
 		        		float[] tabx = new float[l.size()];
 		    			int a = 0 ; //position du tableau des x
 		    			float[] taby = new float[l.size()];
@@ -895,27 +1024,22 @@ public JPanel stockTransitoryImage = new JPanel();
 		    			for(int i = 0; i < l.size(); i++){
 		    			     if(i%2 == 0){
 		    			    	 tabx[a]=(float)(l.get(i));
-		    			    	 System.out.println("Élément à l'index (x) " + i + " = " + l.get(i));
-		    			    	 System.out.println("Élément du tableau(x) " + i + " = " + tabx[a]);
 		    			    	 a = a+1;
 		    			     }
 		    			     
 		    			     if(i%2 == 1){
 		    			    	 taby[a]=(float)(l.get(i));
-		    			    	 System.out.println("Élément à l'index (y) " + i + " = " + l.get(i));
-		    				     System.out.println("Élément du tableau(y) " + i + " = " + tabx[b]);
 		    			    	 b = b+1;
 		    			     }
 		    			}
 		    			l.remove();
 		    			ij.gui.PolygonRoi roi = new ij.gui.PolygonRoi(tabx, taby, Roi.FREELINE);	
-		    			System.out.println(roi.isLine());
+		    			
 		    			//Weka_Segmentation.addTrace("0", "1");
 		        		weka2.addExample(0, roi, 1);
 		        		
 		        		}
 		        });
-				
 				buttonNucleus.addActionListener(new ActionListener(){
 		        	public void actionPerformed(ActionEvent e){
 		        		System.out.println("click sur button nucl");
@@ -927,24 +1051,17 @@ public JPanel stockTransitoryImage = new JPanel();
 		    			for(int i = 0; i < l.size(); i++){
 		    			     if(i%2 == 0){
 		    			    	 tabx[a]= (float) l.get(i);
-		    			    	 System.out.println("Élément à l'index (x) " + i + " = " + l.get(i));
-		    			    	 System.out.println("Élément du tableau(x) " + i + " = " + tabx[a]);
 		    			    	 a = a+1;
 		    			     }
 		    			     
 		    			     if(i%2 == 1){
 		    			    	 taby[b]=(float) l.get(i);
-		    			    	 System.out.println("Élément à l'index (y) " + i + " = " + l.get(i));
-		    				     System.out.println("Élément du tableau(y) " + i + " = " + tabx[b]);
 		    			    	 b = b+1;
 		    			     }
 		    			}	
 		    			l.remove();
-		    			
 		    			ij.gui.PolygonRoi roi = new ij.gui.PolygonRoi(tabx, taby, Roi.FREELINE);
-		    			
-		    			//Weka_Segmentation.addTrace("1", "1");
-		        		weka2.addExample(1, roi, 1);
+		    			weka2.addExample(1, roi, 1);
 		        		}
 		        });
 			panelclass.setLayout(new GridLayout(30, 0,0,0));
@@ -1068,7 +1185,12 @@ public JPanel stockTransitoryImage = new JPanel();
 		public void setAddClassButton(JButton addClassButton) {
 			this.addClassButton = addClassButton;
 		}
-		
+		public BufferedImage getImage2() {
+			return Image2;
+		}
+		public void setImage2(BufferedImage image2) {
+			Image2 = image2;
+		}	
 }
 
 		

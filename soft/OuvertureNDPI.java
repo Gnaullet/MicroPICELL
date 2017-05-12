@@ -21,7 +21,8 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 
-import org.openslide.*;
+import org.openslide.AssociatedImage;
+import org.openslide.OpenSlide;
 
 
 
