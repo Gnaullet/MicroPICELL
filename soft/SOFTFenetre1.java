@@ -52,7 +52,13 @@ import trainableSegmentation.Weka_Segmentation;
 
 public class SOFTFenetre1 extends JFrame { 
 
-	   /**
+	   public JPanel getCount() {
+		return Count;
+	}
+	public void setCount(JPanel count) {
+		Count = count;
+	}
+	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 5449375878197333562L;
@@ -131,6 +137,11 @@ public class SOFTFenetre1 extends JFrame {
 	private int CounterButtonOverlay = 0;
 	private Weka_Segmentation weka = new Weka_Segmentation();
 	private WekaSegmentation weka2 = new WekaSegmentation();
+	private ImagePlus zer;
+	public ImagePlus RoiClassified;
+	public ImageProcessor overlay;
+	public ColorProcessor colorOverlay;
+	public BufferedImage overlayImage;
 //	private SOFTFenetre1 sf = new SOFTFenetre1();
 //	private OuvertureNDPI ouv = new OuvertureNDPI(sf.getnomFichier(), sf.getPathFichier(), sf.getFilechoose(), sf.getChooser());
 //	private ImagePlus IP = new ImagePlus(sf.getNomFichier(), ouv.getLama());
@@ -164,7 +175,8 @@ public JPanel stockTransitoryImage = new JPanel();
 			     System.err.println(parser.nextToken());
 			     }
 			 try {
-			    	//System.loadLibrary("libopenslide-jni.so");
+				File tmpf=new File("ToutFinal/libopenslide-jni.so");
+			     System.load(tmpf.getAbsolutePath());
 			    } catch (UnsatisfiedLinkError e) {
 			      System.err.println("Native Open Slide code library failed to load.\n" + e);
 			      System.exit(1);
@@ -334,12 +346,17 @@ public JPanel stockTransitoryImage = new JPanel();
 			            public void stateChanged(ChangeEvent e) {
 			                
 			                if(onglet.getSelectedComponent().equals(Segmentation)) {
-			                	
 			                	panelPane.removeAll();
 					        	panel.validate();
 					        	Segmentation.add(panel);
 					        	Segmentation.revalidate();
-					     }
+			                }
+			                
+			                if(onglet.getSelectedComponent().equals(Count)) {
+			                	panelPane.removeAll();
+					        	CountNucleus cn = new CountNucleus();
+					        	Count.add(cn.returnTableOfCount(overlayImage, panel));	
+			                }
 			            }
 			        });
 			        return panelAffichage;
@@ -363,7 +380,6 @@ public JPanel stockTransitoryImage = new JPanel();
 		        
 		        buttonBox.addActionListener(new ActionListener(){
 		        	public void actionPerformed(ActionEvent e){
-		        		
 		        		dessinerRec dr = new dessinerRec();
 		        		dr.init();
 		        		}
@@ -430,7 +446,11 @@ public JPanel stockTransitoryImage = new JPanel();
 		public File getFilechoose() {
 			return Filechoose;
 		}
+		/*************************** Implement of Panel Count ****************************/		
 		
+		public void implementOfPanelCount(){
+			
+		}
 		/***************************** DESSINER IMAGE ***********************************/
 		
 		public JPanel caseImage(BufferedImage monImage){
@@ -627,6 +647,8 @@ public JPanel stockTransitoryImage = new JPanel();
 		
 		public class Zoom implements MouseListener, MouseMotionListener{
 			private int a;
+			//TODO rectifier le dezoom qui devient noire
+			//TODO Ne pas devoir a haque fois cliquer sur zoom
 			Zoom(){
 			    imagetransitoire.addMouseListener(this);  // Understand click on image transitoire
 				imagetransitoire.addMouseListener(this);
@@ -803,7 +825,6 @@ public JPanel stockTransitoryImage = new JPanel();
 		
 		public JPanel createAPanelContaintSegmentationTools(){
 			
-   		
 			trainButton = new JButton("Train classifier");
 			trainButton.setToolTipText("Start training the classifier");
 			trainButton.addActionListener(new ActionListener(){
@@ -823,22 +844,19 @@ public JPanel stockTransitoryImage = new JPanel();
 			overlayButton.setToolTipText("Toggle between current segmentation and original image");
 			//overlayButton.setEnabled(false);
 			overlayButton.addActionListener(new ActionListener(){
-	        	private ImagePlus zer;
-
+	        	
 				public void actionPerformed(ActionEvent e){
 	        		
-					ImagePlus RoiClassified = weka2.getClassifiedImage();
-	        		ImageProcessor overlay = RoiClassified.getImageStack().getProcessor(RoiClassified.getCurrentSlice()).duplicate();
-	        		ColorProcessor zz = overlay.convertToColorProcessor();
+					RoiClassified = weka2.getClassifiedImage();
+	        		overlay = RoiClassified.getImageStack().getProcessor(RoiClassified.getCurrentSlice()).duplicate();
+	        		colorOverlay = overlay.convertToColorProcessor();
 	        		
-	        		int threshold = zz.getAutoThreshold();
-	        		zz.autoThreshold();
+	        		int threshold = colorOverlay.getAutoThreshold();
+	        		colorOverlay.autoThreshold();
 	        		System.out.println("threshold : "+ threshold);
-	        		zz.setBinaryThreshold();
-	        		BufferedImage overlayImage = zz.getBufferedImage();
-					       		
-	        		
-	        	     
+	        		colorOverlay.setBinaryThreshold();
+	        		overlayImage = colorOverlay.getBufferedImage();
+					   		 
 	        		if (CounterButtonOverlay % 2 ==0 ){
 	        			 stockTransitoryImage = imagetransitoire;
 	        			 ZoomImage.remove(imagetransitoire);
@@ -873,10 +891,7 @@ public JPanel stockTransitoryImage = new JPanel();
 					return zer;
 				}
 
-				@SuppressWarnings("unused")
-				public void setZer(ImagePlus zer) {
-					this.zer = zer;
-				}
+				
 	        });
 
 			resultButton = new JButton("Create result");
@@ -966,23 +981,9 @@ public JPanel stockTransitoryImage = new JPanel();
 			return panelTotalSegmentation;
 		}
 		
-/******************* convert 8 bit *********************/
+       
 		
-		void convertTo8bitNoScaling( ImagePlus image )
-		{
-			boolean aux = ImageConverter.getDoScaling();
-			
-			ImageConverter.setDoScaling( false );
-			
-			if( image.getImageStackSize() > 1)			
-				(new StackConverter( image )).convertToGray8();
-			else
-				(new ImageConverter( image )).convertToGray8();
-			
-			ImageConverter.setDoScaling( aux );
-	     }
-		
-	/******************************** convert image to bufferedImage **************/	
+	    /******************************** convert image to bufferedImage **************/	
 		public BufferedImage toBufferedImage(Image img)
 		{
 		    if (img instanceof BufferedImage)

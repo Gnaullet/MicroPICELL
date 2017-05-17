@@ -50,14 +50,16 @@ public class OuvertureNDPI {
 		
 		open = new OpenSlide(filechoose);
 		
-		int x = open.getLevelCount(); //permet de connaitre le nombre de niveau de l'image +1
-		System.out.println(x);
-		
 		BufferedImage image = open.createThumbnailImage( 0	 ,0, (int)(open.getLevel0Width()) ,(int)(open.getLevel0Height()) ,1000);
 		lepanel.add(caseImage(image));
-	    this.panelOpened.add(lepanel);
-	    return panelOpened;
-	}
+	    
+		this.panelOpened.add(lepanel);
+	    
+		return panelOpened;
+	} 
+	
+	/****************************************AFFICHAGE MAPPING IMAGE **************************************/
+	
 	public Map<String, AssociatedImage> afficheMapping(String fileName, String Path,File filechoose,JFileChooser chooser) throws IOException{
 		open2 = new OpenSlide(filechoose);
 		
