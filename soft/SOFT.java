@@ -8,7 +8,7 @@ public class SOFT {
 				SOFTFenetre1 fenetre = new SOFTFenetre1();
 				fenetre.setVisible(true);
 			}
-		
+
 		});
 	}
 }
