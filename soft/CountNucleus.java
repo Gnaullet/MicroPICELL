@@ -2,7 +2,9 @@ package soft;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.Graphics2D;
 import java.awt.GridLayout;
+import java.awt.RenderingHints;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -15,8 +17,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ScrollPaneLayout;
 import javax.swing.table.DefaultTableCellRenderer;
-
-
 import ij.ImagePlus;
 import ij.gui.Roi;
 import ij.measure.ResultsTable;
@@ -25,6 +25,7 @@ import ij.plugin.filter.*;
 import ij.process.ImageConverter;
 import ij.process.ImageProcessor;
 import ij.plugin.frame.RoiManager;
+
 public class CountNucleus extends SOFTFenetre1 {
 	public ParticleAnalyzer instanceOfAnalyseParticle = new ParticleAnalyzer(); 
 
@@ -59,7 +60,13 @@ public class CountNucleus extends SOFTFenetre1 {
 
 	public CountNucleus(){}
 	/************************* Return Table With Information of Nucleus **************/
-	public JPanel returnTableOfCount (BufferedImage image, JPanel panel2, BufferedImage[][] tabimage, boolean theBoolean ){
+	/**
+	 * 
+	 * @param image
+	 * @param panel2
+	 * @return
+	 */
+	public JPanel returnTableOfCount (BufferedImage image, JPanel panel2 ){
 
 		panel = panel2;
 		Setup = new JButton("Select setup and run count");
@@ -67,14 +74,12 @@ public class CountNucleus extends SOFTFenetre1 {
 		Setup.addActionListener(new ActionListener(){
 
 			public void actionPerformed(ActionEvent e){
-				if(theBoolean==false){
+					
+				   
+					
 					IP = new ImagePlus("new Image", image);
-
 					ImageConverter ic = new ImageConverter(IP);
-
-					//instanceOfAnalyseParticle.setHideOutputImage(false);
 					ic.convertToGray8();
-
 
 					IProcessor = IP.getImageStack().getProcessor(IP.getCurrentSlice()).duplicate();
 
@@ -89,141 +94,25 @@ public class CountNucleus extends SOFTFenetre1 {
 						int vv = analyse.getMeasurements();
 						System.out.println("analyse 1 "+vv);
 						instanceOfAnalyseParticle.analyze(imageBinaire, IProcessor);
-
+						
 						instanceOfAnalyseParticle.run(IProcessor);
+						OutputImage = instanceOfAnalyseParticle.getOutputImage();
+					
 						System.out.println(instanceOfAnalyseParticle.toString());
 						System.out.println(OutputImage);
 						@SuppressWarnings("static-access")
 						int ee = analyse.getMeasurements();
 						System.out.println("analyse 2 "+ee);
 						returnTable(roiManager);
-						OutputImage = instanceOfAnalyseParticle.getOutputImage();
-
-
-
-
+						
 						System.out.println("1");
 
 					}
-					else{
-						RoiManager[][] tabRoi = new RoiManager[tabimage.length][tabimage.length];;
-						for(int i = 0; i<tabimage.length; i++){
-							for(int j=0; j<tabimage.length; j++){
-
-								tabIP[i][j]=new ImagePlus("new Image",tabimage[i][j]);
-								System.out.println(tabIP[i][j]);
-
-								IProcessor = IP.getImageStack().getProcessor(IP.getCurrentSlice()).duplicate();
-
-								IProcessor.setBinaryThreshold();
-
-								imageBinaire = new ImagePlus("ImagePlus", IProcessor);
-
-								Showdialog = instanceOfAnalyseParticle.showDialog();
-								if(Showdialog ==true ){
-									int counterForTabData = 0;
-									RoiManager roiManager = new RoiManager();
-									@SuppressWarnings("static-access")
-									int vv = analyse.getMeasurements();
-									System.out.println("analyse 1 "+vv);
-									instanceOfAnalyseParticle.analyze(imageBinaire, IProcessor);
-
-									instanceOfAnalyseParticle.run(IProcessor);
-									System.out.println(instanceOfAnalyseParticle.toString());
-									System.out.println(OutputImage);
-									@SuppressWarnings("static-access")
-									int ee = analyse.getMeasurements();
-									System.out.println("analyse 2 "+ee);
-									totalCount  = totalCount + roiManager.getCount()/2;
-									System.out.println(totalCount);
-									Object[][]donnees = new Object[totalCount][3];
-									tabRoi[i][j]=roiManager;
-									if((tabimage.length-1 ==i) && (tabimage.length-1 ==j)){
-
-										for(int k = 0; k<tabRoi.length; k++){
-											for(int l=0; l<tabRoi.length; l++){
-
-												/**************DEBUT Creation du tableau image entière*************/
-												int azerty = tabRoi[k][l].getCount()/2;
-												for(int m=0; m<azerty; m++){
-
-													Roi zzz = roiManager.getRoi(m);
-
-													@SuppressWarnings("static-access")
-													ResultsTable resultTable = analyse.getResultsTable();
-													resultTable.getColumnHeadings();
-													for(int n=0; n<3; n++){
-														if(n==0){
-															donnees[counterForTabData][n]=m+1;
-														}
-														else{
-															DecimalFormat df = new DecimalFormat("0.00");
-															if(n==1){
-																donnees[counterForTabData][n]=df.format(zzz.getLength());
-															}else{
-																donnees[counterForTabData][n]=resultTable.getStringValue(0, m);
-															}
-
-														}
-														counterForTabData = counterForTabData+1;
-													}
-												}
-
-												/************** FIN Creation du tableau image entière*************/
-
-											}
-										}
-									}
-
-								}
-
-							}
-						}
-						/***********Début creation du tableau**************************/
-						JPanel panelTable = new JPanel();
-						JTable TableAffiche = createTable(donnees);
-
-
-						DefaultTableCellRenderer custom = new DefaultTableCellRenderer(); 
-						custom.setHorizontalAlignment(JLabel.CENTER); 
-						for (int i=0 ; i < TableAffiche.getColumnCount() ; i++){ 
-							TableAffiche.getColumnModel().getColumn(i).setCellRenderer(custom); 
-						}
-
-
-						TableAffiche.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-						TableAffiche.getColumn("id").setPreferredWidth(133);
-						TableAffiche.getColumn("Perimeter").setPreferredWidth(133);
-						TableAffiche.getColumn("Area").setPreferredWidth(133);
-						panelTable.setSize(new Dimension(400, 500));
-						panelTable.setMinimumSize(new Dimension(400, 500));
-						panelTable.setMaximumSize(new Dimension(400, 500));
-						panelTable.setPreferredSize(new Dimension(400, 500));
-
-						//panelTable.add(TableAffiche.getTableHeader(),BorderLayout.NORTH);
-
-						JScrollPane Table2 =new JScrollPane();
-						Table2.setVisible(true);
-						Table2.setLayout(new ScrollPaneLayout());
-
-						Table2.setViewportView(TableAffiche);
-						//Table2.setVerticalScrollBarPolicy(ScrollPaneLayout.HORIZONTAL_SCROLLBAR_ALWAYS);
-						Table2.getHorizontalScrollBar();
-						panelTable.add(Table2,BorderLayout.CENTER);
-
-						label2 = new JLabel("<html> There are " + totalCount +" nucleus. </html>");
-
-						panelTable.add(label2,BorderLayout.NORTH);
-						panelTotalCount.add(panelTable,BorderLayout.EAST);
-
-						panelTotalCount.repaint();
-						System.out.println("Normalement tableau");
-						/***********FIN  creation du tableau**************************/
-					}
-				}
 			}
 		});	
-
+		/**
+		 * 
+		 */
 		viewMask = new JButton("View mask count");
 		viewMask.setToolTipText("Generate current probability maps");		
 		viewMask.addActionListener(new ActionListener(){
@@ -239,6 +128,7 @@ public class CountNucleus extends SOFTFenetre1 {
 						panelTotalCount.repaint();
 					}else{
 						System.out.println("l'image n'est pas null");
+						
 						StockPanel=panel;
 						panelTotalCount.remove(panel);
 						panelTotalCount.revalidate();
@@ -263,6 +153,10 @@ public class CountNucleus extends SOFTFenetre1 {
 	}
 
 	/******************************** Construction of Table result Count *******************/
+	/**
+	 * 
+	 * @param roiManager
+	 */
 	public void returnTable(RoiManager roiManager){
 
 
@@ -346,6 +240,31 @@ public class CountNucleus extends SOFTFenetre1 {
 
 		return tableau;
 	}
+	/********************************create thumbnail of overlay ************/
+	 
+    public static BufferedImage createThumbnail(BufferedImage image, int requestedThumbSize) {
+    float ratio = (float) image.getWidth() / (float) image.getHeight();
+    int width = image.getWidth();
+    BufferedImage thumb = image;
+
+    do {
+        width /= 2;
+        if (width < requestedThumbSize) {
+            width = requestedThumbSize;
+        }
+
+        BufferedImage temp = new BufferedImage(width, (int) (width / ratio), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = temp.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                            RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2.drawImage(thumb, 0, 0, temp.getWidth(), temp.getHeight(), null);
+        g2.dispose();
+
+        thumb = temp;
+    } while (width != requestedThumbSize);
+
+    return thumb;
+}
 	/******************************** Getter and Setter ****************/
 	public ParticleAnalyzer getInstanceOfAnalyseParticle() {
 		return instanceOfAnalyseParticle;

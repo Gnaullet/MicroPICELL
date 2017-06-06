@@ -20,13 +20,13 @@ import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import javax.swing.ButtonGroup;
@@ -61,6 +61,7 @@ public class SOFTFenetre1 extends JFrame {
 	public class MonTraitement implements Runnable {
 		private int paramI = 0;
 		private int paramJ = 0;
+
 		public MonTraitement(int i, int j) {
 			paramI =i;
 			paramJ=j;
@@ -70,31 +71,34 @@ public class SOFTFenetre1 extends JFrame {
 		 * 
 		 */
 		public void run() {
-			System.out.println("1");
-			WekaSegmentation weka2 = new WekaSegmentation();
-			System.out.println("2");
+			//WekaSegmentation weka=null;
+
+			WekaSegmentation weka1 = new WekaSegmentation();
+
 			// TODO Auto-generated method stub
-			BufferedImage iv = tabbuffereds[paramI][paramJ];
-			System.out.println("3");
-			ImagePlus IPlus = new ImagePlus("NewImagePlus", iv);
-			System.out.println("4");
+
+
 			/************ changement ***********/
 
 			System.out.println("Mon traitement " + Thread.currentThread().getName());
-			System.out.println("5");
+
 			System.out.println(" "+paramI+ " "+paramJ);
-			System.out.println("6");
-			weka2.setTrainingImage(IPlus);
-			System.out.println("7");
-			boolean aa = weka2.loadClassifier("toto");
-			System.out.println("8");
+
+
+			ImagePlus ze = new ImagePlus("truc", tabbuffereds[paramI][paramJ]);
+			System.out.println("ze = "+ze);
+			//	weka=tabweka[paramI][paramJ];
+			weka1.setTrainingImage(ze);
+
+			boolean aa = weka1.loadClassifier("toto");
+
 			System.out.println("le classifieur a été load ou pas : "+aa);
-			System.out.println("9");
-			AbstractClassifier vv = weka2.getClassifier();
+
+			AbstractClassifier vv = weka1.getClassifier();
 			System.out.println(vv);
-			System.out.println("10");
-			weka2.applyClassifier(true);
-			ImagePlus RoiClassified2 = weka2.getClassifiedImage();
+
+			weka1.applyClassifier(true);
+			ImagePlus RoiClassified2 = weka1.getClassifiedImage();
 			ImageProcessor overlaylocal = RoiClassified2.getImageStack().getProcessor(RoiClassified2.getCurrentSlice()).duplicate();
 			ColorProcessor colorOverlay3 = overlaylocal.convertToColorProcessor();
 
@@ -105,6 +109,7 @@ public class SOFTFenetre1 extends JFrame {
 
 			System.out.println("threshold : "+ threshold+ " "+paramI+ " "+paramJ);
 			System.out.println("itsdone");
+
 		}
 
 
@@ -141,7 +146,7 @@ public class SOFTFenetre1 extends JFrame {
 	private int widthThumbnail;
 	private int heightThumbnail;
 	public int[] tabPosition;
-	
+	public int variable = 200;
 	private JPanel zoomSeg = new JPanel();
 	private JPanel panelAffichage = new JPanel();
 	private JPanel Count = new JPanel();
@@ -157,6 +162,8 @@ public class SOFTFenetre1 extends JFrame {
 	private long largeurImageTransitoire=0;
 	private long hauteurImageTransitoire=0;
 	public BufferedImage[][] tabbuffereds;
+	public ImagePlus[][] tabIP;
+
 	public WekaSegmentation[][] tabweka;
 	public boolean applywholeimage = false;
 
@@ -252,8 +259,14 @@ public class SOFTFenetre1 extends JFrame {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); //On dit à l'application de se fermer lors du clic sur la croix
 		setContentPane(buildContentPane());
 	}
-
+/**
+ * 
+ * @return
+ */
 	private JPanel buildContentPane(){
+		/**
+		 * 
+		 */
 
 		tabValeur[0]=-1;
 		String property = System.getProperty("java.library.path");
@@ -296,7 +309,7 @@ public class SOFTFenetre1 extends JFrame {
 						}
 
 						imagetransitoire.add(ouv.ouvertureImage(nomFichier,pathFichier,Filechoose,chooser));
-
+						
 						ZoomImage.add(imagetransitoire);
 						ZoomImage.validate();
 						ZoomImage.repaint();
@@ -377,7 +390,6 @@ public class SOFTFenetre1 extends JFrame {
 
 						imagetransitoire.add(ouv.ouvertureImage(nomFichier,pathFichier,Filechoose,chooser));
 
-						//ZoomImage.setBorder(javax.swing.BorderFactory.createEmptyBorder());
 						ZoomImage.add(imagetransitoire);
 						ZoomImage.validate();
 						ZoomImage.repaint();
@@ -441,12 +453,92 @@ public class SOFTFenetre1 extends JFrame {
 					if(applywholeimage==false){
 						tabbuffereds = null;
 					}
-					Count.add(cn.returnTableOfCount(overlayImage, panel, tabbuffereds, theboolean), BorderLayout.WEST);	
+					if(applywholeimage==true){
+						 BufferedImage buffinal = null;
+						 BufferedImage buf = null;
+						 for(int i = 0; i<tabbuffereds.length; i++){
+							buf = null;
+							 for(int j=0; j<tabbuffereds[0].length; j++){
+								BufferedImage ii = buf;
+								if(j==0){
+									System.out.println("truc");
+									buf = tabbuffereds[i][0];
+									int aa = buf.getType();
+									System.out.println(aa);
+									System.out.println(buf);
+									
+									System.out.println(" "+i+" "+j);
+								}else{
+									System.out.println("machin");
+									
+									System.out.println(" "+i+" "+j);
+									int w1 = ii.getWidth();
+									int h1 = ii.getHeight();
+									int w2 = tabbuffereds[i][j].getWidth();
+									int h2 = tabbuffereds[i][j].getHeight();
+									int wMax = w1+w2;
+									//int hMax = h1+h2;
+									System.out.println("h1"+h1);
+									System.out.println("h2"+h2);
+									System.out.println("w1"+w1);
+									System.out.println("w2"+w2);
+									
+									buf = new BufferedImage(wMax, h2, 1);
+									
+									Graphics2D g2 = buf.createGraphics();
+						            g2.drawImage(ii, 0, 0, null);
+						           
+						            g2.drawImage(tabbuffereds[i][j], w1, 0, null);
+						            
+						            
+								}
+							}
+							 //ImagePlus aez = new ImagePlus("uhfri", buf);
+				            //aez.show();	
+							 if(i!=0){
+								BufferedImage iii = buffinal;
+							 	int w1 = iii.getWidth();
+								int h1 = iii.getHeight();
+								int w2 = buf.getWidth();
+								int h2 = buf.getHeight();
+								System.out.println("h1"+h1);
+								System.out.println("h2"+h2);
+								System.out.println("w1"+w1);
+								System.out.println("w2"+w2);
+								
+								//int wMax = w1+w2;
+								int hMax = h1+h2;
+								buffinal=null;
+								buffinal = new BufferedImage(w2, hMax, 1);
+								Graphics2D g2 = buffinal.createGraphics();
+					            g2.drawImage(iii, 0, 0, null);
+					            g2.drawImage(buf, 0, h1, null); 
+							 }else{
+								 buffinal=buf;
+							 }
+							
+						 }
+						// ImagePlus IE = new ImagePlus("blibli", buffinal);
+						// IE.show();
+						 overlayImage = buffinal;
+						// ImagePlus aaaa = new ImagePlus("truc", overlayImage);
+						// aaaa.show();
+						 
+					}
+					ZoomImage.remove(imagetransitoire);
+					panel.validate();
+					ZoomImage.add(caseImage(overlayImage));
+					panel.revalidate();
+					Count.add(cn.returnTableOfCount(overlayImage, panel), BorderLayout.WEST);	
 				}
 			}
 		});
 		return panelAffichage;
 	}
+	/**
+	 * 
+	 */
+	
 
 	/******************* Tools Bar ************************/
 	public JPanel ToolsBar(){
@@ -921,10 +1013,8 @@ public class SOFTFenetre1 extends JFrame {
 					}else{
 						ZoomImage.remove(imagetransitoire);
 						panel.validate();
-
 						panel.revalidate();
 						imagetransitoire = stockTransitoryImage;
-
 						ZoomImage.add(imagetransitoire);					
 						ZoomImage.revalidate();
 						panel.add(ZoomImage);
@@ -943,7 +1033,7 @@ public class SOFTFenetre1 extends JFrame {
 			//resultButton.setEnabled(false);
 			resultButton.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent e){
-						
+
 				}
 			});
 
@@ -994,13 +1084,6 @@ public class SOFTFenetre1 extends JFrame {
 
 					dessinerRec rec = new dessinerRec();
 					rec.init();
-
-					
-					
-					
-
-
-
 				}		
 			});
 			Validation = new JButton("Valide your ROI");
@@ -1011,7 +1094,7 @@ public class SOFTFenetre1 extends JFrame {
 					OpenSlide open = null;
 					try {
 						open = new OpenSlide(Filechoose);
-					
+
 						int largeur = ZoomImage.getWidth();
 						int hauteur = ZoomImage.getHeight();
 						x = (int) ((tabValeur[0]*(int)(open.getLevel0Width()))/largeur);
@@ -1024,8 +1107,6 @@ public class SOFTFenetre1 extends JFrame {
 						System.out.println(larg);
 						System.out.println(haut);
 						System.out.println("youpi");
-						boolean zz = weka2.loadClassifier("toto");
-						System.out.println(zz);
 
 
 						int maxsize ;
@@ -1036,12 +1117,14 @@ public class SOFTFenetre1 extends JFrame {
 						}
 						System.out.println(maxsize);
 						boolean tab = false;
-						if (maxsize<2000){
+						if (maxsize<200){
 							try {
 								Image = open.createThumbnailImage(0, 0, larg, haut, maxsize);
 							} catch (IOException e1) {
 								e1.printStackTrace();
 							}
+							boolean zz = weka2.loadClassifier("toto");
+							System.out.println(zz);
 
 							IP = new ImagePlus("NewImagePlus", Image);
 							weka2.setTrainingImage(IP);
@@ -1056,14 +1139,16 @@ public class SOFTFenetre1 extends JFrame {
 							overlayImage = colorOverlay.getBufferedImage();	
 						}else{
 							tab = true;
-							int variable= 2000;
+							
 							tabbuffereds = new BufferedImage[((int) haut/variable)+1][((int) larg/variable)+1];
 							tabweka = new WekaSegmentation[((int) haut/variable)+1][((int) larg/variable)+1];
+							tabIP = new ImagePlus[((int) haut/variable)+1][((int) larg/variable)+1];
 							System.out.println(tabbuffereds.length + " autre "+tabbuffereds[0].length);
-							
 
 
-							for(int i=y; i<=haut;i=i+variable){
+							int counti=0;
+							int county=0;
+							for(int i=0; i<=haut;i=i+variable){
 
 
 								long hauteurThumbnailToCreate;
@@ -1074,7 +1159,7 @@ public class SOFTFenetre1 extends JFrame {
 								}
 
 
-								for(int j=x; j<=larg;j=j+variable){
+								for(int j=0; j<=larg;j=j+variable){
 									long largeurThumbnailToCreate;
 									if ((larg-(j))<variable){
 										largeurThumbnailToCreate = larg-(j);
@@ -1082,49 +1167,61 @@ public class SOFTFenetre1 extends JFrame {
 										largeurThumbnailToCreate=variable;
 									}
 									try {
-										tabbuffereds[i/variable][j/variable]= open.createThumbnailImage(j, i, largeurThumbnailToCreate, hauteurThumbnailToCreate, variable);
+										System.out.println(largeurThumbnailToCreate);
+										System.out.println(hauteurThumbnailToCreate);
+										tabbuffereds[counti][county]= open.createThumbnailImage((x+j),(y+i), largeurThumbnailToCreate, hauteurThumbnailToCreate, variable);
+										BufferedImage aze = tabbuffereds[counti][county];
+										System.out.println(aze);
 
 
-										//IP.show();
+										tabIP[counti][county]=new ImagePlus("gvy",aze);;
+										tabweka[counti][county]= new WekaSegmentation();
 									} catch (IOException e2) {
 										System.out.println("error in try");
 										e2.printStackTrace();
 									}
+									county=county+1;
 								}
+								county=0;
+								counti=counti+1;
 							}
-							}
-						if(tab==true){
-							int nbProcs = Runtime.getRuntime().availableProcessors();
-							nbProcs -=Math.round(nbProcs*50/100);
-							System.out.println("nb de processor utilisé= " + nbProcs);
-							ExecutorService executorService = Executors.newFixedThreadPool(nbProcs);
-							System.out.println(executorService);
-							//tabbuffereds[1].length
-							for(int k = 0; k<= tabbuffereds.length; k++){
-								for (int l =0; l<=tabbuffereds[0].length; l++){
-									/*for(int k = 0; k< 4; k++){
+							if(tab==true){
+								int nbProcs = Runtime.getRuntime().availableProcessors();
+								nbProcs -=Math.round(nbProcs*50/100);
+								System.out.println("nb de processor utilisé= " + nbProcs);
+								ExecutorService executorService = Executors.newFixedThreadPool(nbProcs);
+								System.out.println(executorService);
+								//tabbuffereds[1].length
+								for(int k = 0; k< tabbuffereds.length; k++){
+									for (int l =0; l<tabbuffereds[0].length; l++){
+										/*for(int k = 0; k< 4; k++){
 											for (int l =0; l<4; l++){*/
-									Runnable runnable = new MonTraitement(k,l); 
-									Future<?> runnableFuture =executorService.submit(runnable);
-									boolean ee = runnableFuture.isDone();
-									System.out.println("IS DONE = "+ee);
+										Runnable runnable = new MonTraitement(k,l); 
+										//Future<?> runnableFuture =executorService.submit(runnable);
+										//boolean ee = runnableFuture.isDone();
+										//System.out.println("IS DONE = "+ee);
+										executorService.submit(runnable);
+										//Thread thread = new Thread(runnable);
+										//thread.start();
+									}
 								}
+
+								executorService.shutdown();
+								executorService.awaitTermination(99999, TimeUnit.SECONDS);
 							}
-							
-							executorService.shutdown();
-							executorService.awaitTermination(99999, TimeUnit.SECONDS);
 						}
-							}catch (InterruptedException e1) {
-								// TODO Auto-generated catch block
-								e1.printStackTrace();
-							} catch (IOException e3) {
-								// TODO Auto-generated catch block
-								e3.printStackTrace();
-							}
-						   System.out.println("finish");
-							
+					}catch (InterruptedException e1) {
+						// TODO Auto-generated catch block
+						e1.printStackTrace();
+					} catch (IOException e3) {
+						// TODO Auto-generated catch block
+						e3.printStackTrace();
+					}
+					System.out.println("finish");
+					applywholeimage=true;
+					theboolean=true;
 				}
-					
+
 
 			}); 
 			ApplyClassifierInWholeImage = new JButton("Apply Classifier In Whole Image");
@@ -1134,7 +1231,7 @@ public class SOFTFenetre1 extends JFrame {
 				public void actionPerformed(ActionEvent e){
 
 					System.out.println("ApplyClassifierInWholeImage");
-					theboolean =true;
+
 
 
 					OpenSlide open = null;
@@ -1172,7 +1269,8 @@ public class SOFTFenetre1 extends JFrame {
 							int variable= 2500;
 							tabbuffereds = new BufferedImage[((int) open.getLevel0Height()/variable)+1][((int) open.getLevel0Width()/variable)+1];
 							//tabbuffereds = new BufferedImage[4][4];
-
+							tabweka = new WekaSegmentation[((int) open.getLevel0Height()/variable)+1][((int) open.getLevel0Width()/variable)+1];
+							tabIP = new ImagePlus[((int) open.getLevel0Height()/variable)+1][((int) open.getLevel0Width()/variable)+1];
 							System.out.println(tabbuffereds.length + " autre "+tabbuffereds[0].length);
 
 							//long hauteurThumbnailToCreate;
@@ -1201,8 +1299,8 @@ public class SOFTFenetre1 extends JFrame {
 										System.out.println("hauteur : "+ hauteurThumbnailToCreate);
 										System.out.println("largeur : "+ largeurThumbnailToCreate);
 										tabbuffereds[i/variable][j/variable]= open.createThumbnailImage(j, i, largeurThumbnailToCreate, hauteurThumbnailToCreate, variable);
-
-
+										tabIP[i/variable][j/variable]=new ImagePlus("gvy",tabbuffereds[i/variable][j/variable]);
+										tabweka[i/variable][j/variable]= new WekaSegmentation();
 										//IP.show();
 									} catch (IOException e2) {
 										System.out.println("error in try");
@@ -1215,31 +1313,63 @@ public class SOFTFenetre1 extends JFrame {
 
 						}
 						if(tab==true){
+
+							theboolean =true;
+							int nbProcs = Runtime.getRuntime().availableProcessors();
+							nbProcs -=Math.round(nbProcs*80/100);
+							System.out.println("nb de processor utilisé= " + nbProcs);
+							Runtime runtime = Runtime.getRuntime();
+
+							NumberFormat format = NumberFormat.getInstance();
+
 							
-						
-						int nbProcs = Runtime.getRuntime().availableProcessors();
-						nbProcs -=Math.round(nbProcs*50/100);
-						System.out.println("nb de processor utilisé= " + nbProcs);
-						ExecutorService executorService = Executors.newFixedThreadPool(nbProcs);
-						System.out.println(executorService);
-						//tabbuffereds[1].length
-						for(int k = 0; k< tabbuffereds.length; k++){
-							for (int l =0; l<tabbuffereds[0].length; l++){
-								/*for(int k = 0; k< 4; k++){
+							long maxMemory = runtime.maxMemory();
+							long allocatedMemory = runtime.totalMemory();
+							long freeMemory = runtime.freeMemory();
+
+							System.out.println("b free memory: " + format.format(freeMemory / 1024) + "<br/>");
+							System.out.println("b allocated memory: " + format.format(allocatedMemory / 1024) + "<br/>");
+							System.out.println("b max memory: " + format.format(maxMemory / 1024) + "<br/>");
+							System.out.println("b total free memory: " + format.format((freeMemory + (maxMemory - allocatedMemory)) / 1024) + "<br/>");
+							//tabbuffereds[1].length
+							for(int k = 0; k< tabbuffereds.length; k++){
+								ExecutorService executorService = Executors.newFixedThreadPool(nbProcs);
+								System.out.println(executorService);
+								for (int l =0; l<2; l++){
+									/*for(int k = 0; k< 4; k++){
 										for (int l =0; l<4; l++){*/
-								Runnable runnable = new MonTraitement(k,l); 
-								//Future<?> runnableFuture =executorService.submit(runnable);
-								//boolean ee = runnableFuture.isDone();
-								//System.out.println("IS DONE = "+ee);
-								//executorService.submit(runnable);
-								Thread thread = new Thread(runnable);
-								thread.start();
+									Runnable runnable = new MonTraitement(k,l); 
+									//Future<?> runnableFuture =executorService.submit(runnable);
+									//boolean ee = runnableFuture.isDone();
+									//System.out.println("IS DONE = "+ee);
+									executorService.submit(runnable);
+									//Thread thread = new Thread(runnable);
+									//thread.start();
+									maxMemory = runtime.maxMemory();
+									allocatedMemory = runtime.totalMemory();
+									freeMemory = runtime.freeMemory();
 
+									System.out.println(l + " " + k+" free memory: " + format.format(freeMemory / 1024) + "<br/>");
+									System.out.println(l + " " + k+" allocated memory: " + format.format(allocatedMemory / 1024) + "<br/>");
+									System.out.println(l + " " + k+" max memory: " + format.format(maxMemory / 1024) + "<br/>");
+									System.out.println(l + " " + k+" total free memory: " + format.format((freeMemory + (maxMemory - allocatedMemory)) / 1024) + "<br/>");
+								}
+								System.out.println("just before shut down");
+								executorService.shutdown();
+								
+								executorService.awaitTermination(99999, TimeUnit.SECONDS);
+								
+								System.out.println("just after wait");
+								maxMemory = runtime.maxMemory();
+								allocatedMemory = runtime.totalMemory();
+								freeMemory = runtime.freeMemory();
+
+								System.out.println("after free memory: " + format.format(freeMemory / 1024) + "<br/>");
+								System.out.println("after  allocated memory: " + format.format(allocatedMemory / 1024) + "<br/>");
+								System.out.println("after max memory: " + format.format(maxMemory / 1024) + "<br/>");
+								System.out.println("after  total free memory: " + format.format((freeMemory + (maxMemory - allocatedMemory)) / 1024) + "<br/>");
 							}
-						}
-
-						executorService.shutdown();
-						executorService.awaitTermination(99999, TimeUnit.SECONDS);
+							
 						}
 
 
