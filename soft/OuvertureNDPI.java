@@ -50,7 +50,7 @@ public class OuvertureNDPI {
 
 		open = new OpenSlide(filechoose);
 
-		BufferedImage image = open.createThumbnailImage( 0	 ,0, (int)(open.getLevel0Width()) ,(int)(open.getLevel0Height()) ,1000);
+		BufferedImage image = open.createThumbnailImage(0, 0, (int)(open.getLevel0Width()) ,(int)(open.getLevel0Height()) ,900);
 		lepanel.add(caseImage(image));
 
 		this.panelOpened.add(lepanel);
@@ -130,8 +130,6 @@ public class OuvertureNDPI {
 							System.out.println("error of selection of the image");
 							e1.printStackTrace();
 						}
-
-
 
 						try {
 							setR(open3.getAssociatedImages());
