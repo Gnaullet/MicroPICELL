@@ -40,27 +40,24 @@ public class SOFTFenetre1 extends JFrame {
 
 		public void run() {
 			long chrono = java.lang.System.currentTimeMillis() ;
-			
+
 			WekaSegmentation weka1 = new WekaSegmentation();
-			
+
 			/************  Changement  ***********/
-			
+
 			float ee = (float) (counttrhread)/(float) (((tabbuffereds.length)*(tabbuffereds[0].length)));
 			ImagePlus ze = new ImagePlus("truc", tabbuffereds[paramI][paramJ]);
 			weka1.setTrainingImage(ze);
-			boolean aa = weka1.loadClassifier("titi");
-			
+			weka1.loadClassifier("titi");
+
 
 			ImagePlus RoiClassified2 =weka1.applyClassifier(ze, 8, true);
-			//cc.show();
 
-			
-			
 			ImageProcessor overlaylocal = RoiClassified2.getImageStack().getProcessor(RoiClassified2.getCurrentSlice()).duplicate();
 			ColorProcessor colorOverlay3 = overlaylocal.convertToColorProcessor();
 			colorOverlay3.autoThreshold();
 			colorOverlay3.setBinaryThreshold();
-			
+
 			tabbuffereds[paramI][paramJ] = colorOverlay3.getBufferedImage();
 			Graphics gg = progress.getGraphics();
 			progress.setValue((int) (ee*100));
@@ -70,14 +67,14 @@ public class SOFTFenetre1 extends JFrame {
 			progress.validate();
 			progress.repaint();
 			long chrono2 = java.lang.System.currentTimeMillis() ;
-			
+
 			long temps = chrono2 - chrono ;
-			
+
 			donnees[counttrhread][0]=counttrhread+1;
 			donnees[counttrhread][1]=temps;
-			
+
 			counttrhread=counttrhread+1;
-			
+
 			if(paramI*paramJ==(tabbuffereds.length-1)*(tabbuffereds[0].length-1)){
 				setTexte(new JLabel("Your segmentation is finish, you can go to count "));
 			}
@@ -221,13 +218,15 @@ public class SOFTFenetre1 extends JFrame {
 	public JPanel panelSegmentation = new JPanel();
 	public JPanel stockTransitoryImage = new JPanel();
 	public boolean zoomasked=false;
+	public LinkedList<Roi> roilistcorrected = new LinkedList<Roi>();
+
 
 	/************************** Initialisation de SOFTFenetre1 ******************************/
 
 	public SOFTFenetre1(){
 		super();
 		build();//On initialise notre fenêtre
-		
+
 
 	}
 	private void build(){
@@ -236,8 +235,8 @@ public class SOFTFenetre1 extends JFrame {
 		//ImagePlus EE = new ImagePlus("fioer",icone);
 		//EE.show();
 		setIconImage(icone);
-		
-		
+
+
 		this.setSize((int)getToolkit().getScreenSize().getWidth(), ((int)getToolkit().getScreenSize().getHeight() - 40)); //On donne une taille à notre fenêtre
 
 		setResizable(true); //On autorise le redimensionnement de la fenêtre
@@ -262,7 +261,7 @@ public class SOFTFenetre1 extends JFrame {
 		tabValeur[0]=-1;
 		String property = System.getProperty("java.library.path");
 		StringTokenizer parser = new StringTokenizer(property, ";");
-		
+
 		while (parser.hasMoreTokens()) {
 			System.err.println(parser.nextToken());
 		}
@@ -274,7 +273,7 @@ public class SOFTFenetre1 extends JFrame {
 			System.exit(1);
 		}
 
-		
+
 		OuvertureButton = new JButton("Open your image on NDPI format ");
 		OuvertureButton.addActionListener(new ActionListener(){
 			private OpenSlide open;
@@ -284,7 +283,7 @@ public class SOFTFenetre1 extends JFrame {
 					nomFichier=chooser.getSelectedFile().getName();
 					pathFichier=chooser.getSelectedFile().getPath();
 					classifieur=nomFichier.toString();
-					
+
 					Filechoose = chooser.getSelectedFile();
 					OpenSlide openend = null;
 					try {
@@ -300,7 +299,7 @@ public class SOFTFenetre1 extends JFrame {
 					OuvertureNDPI ouv = new OuvertureNDPI(nomFichier, pathFichier, Filechoose, chooser);
 					try {
 						if(ZoomImage.getComponentCount()>=1){
-							
+
 							ZoomImage.remove(imagetransitoire); 
 							ZoomImage.validate();
 							ZoomImage.repaint();
@@ -309,19 +308,16 @@ public class SOFTFenetre1 extends JFrame {
 						ZoomImage.add(imagetransitoire);
 						ZoomImage.validate();
 						ZoomImage.repaint();
-						
 						panel.add(ZoomImage);
 						new position();
 						buffImage = ouv.ReturnBuffImage(nomFichier,pathFichier,Filechoose,chooser);
 						IP = new ImagePlus(nomFichier, buffImage);
-						
 						weka2.setTrainingImage(IP);
 						open = new OpenSlide(Filechoose);
 						Map<String, String> properties = open.getProperties();
 						properties.size();
 						widhPixelOnMicron = properties.get("openslide.mpp-x");
 						heightPixelOnMicron = properties.get("openslide.mpp-y");
-						
 						setVisible(true);
 						location(Filechoose);
 					} catch (IOException e1) {
@@ -380,14 +376,14 @@ public class SOFTFenetre1 extends JFrame {
 						buffImage = ouv.ReturnBuffImage(nomFichier,pathFichier,Filechoose,chooser);
 						IP = new ImagePlus(nomFichier, buffImage);
 						//IP.show();
-						
+
 						weka2.setTrainingImage(IP);
 						open = new OpenSlide(Filechoose);
 						Map<String, String> properties = open.getProperties();
 						properties.size();
 						widhPixelOnMicron = properties.get("openslide.mpp-x");
 						heightPixelOnMicron = properties.get("openslide.mpp-y");
-					
+
 						setVisible(true);
 						panel.remove(OuvertureButton);
 						panel.validate();
@@ -401,15 +397,15 @@ public class SOFTFenetre1 extends JFrame {
 				}
 			}
 		});	 
-		
+
 		setJMenuBar(menuBar);
 		menuBar.setBackground(new Color(30, 127, 203));
 		Segmentation.add(panel);
-		
+
 		Segmentation.setBackground(colorsegmentation);
 		panel.setBackground(colorsegmentation);
 		Segmentation.setLayout(new BorderLayout());
-		
+
 		Segmentation.add(panel,BorderLayout.CENTER);
 		Segmentation segm = new Segmentation();
 		Segmentation.add(segm.createAPanelContaintSegmentationTools(),BorderLayout.WEST);
@@ -441,9 +437,9 @@ public class SOFTFenetre1 extends JFrame {
 								BufferedImage ii = buf;
 								if(j==0){
 									buf = tabbuffereds[i][0];
-									
+
 								}else{
-									
+
 									int w1 = ii.getWidth();
 									int w2 = tabbuffereds[i][j].getWidth();
 									int h2 = tabbuffereds[i][j].getHeight();
@@ -470,17 +466,20 @@ public class SOFTFenetre1 extends JFrame {
 							}
 						}
 						overlayImage = buffinal;
-						//ImagePlus ee = new ImagePlus("truc", overlayImage);
-						//ee.show();
-						tabImageClassified[l]=overlayImage;
+						ImagePlus ee = new ImagePlus("truc", overlayImage);
+
+						roilistcorrected.get(l).getMask().invert();
+						roilistcorrected.get(l).getMask().setColor(Color.white);
+						ee.getProcessor().fill(roilistcorrected.get(l).getMask());
+						tabImageClassified[l] = ee.getBufferedImage();
 					}
-		
+
 					Count.add(cn.returnTableOfCount(tabImageClassified, panel, listImage), BorderLayout.WEST);	
 				}
 				if(onglet.getSelectedComponent().equals(Batch)) {
 					Batch.add(batch.ReturnPanelBatch());	
 				}
-		}
+			}
 		});
 		panelAffichage.setBackground(new Color(53, 122, 183));
 		return panelAffichage;
@@ -509,7 +508,7 @@ public class SOFTFenetre1 extends JFrame {
 			x=(int) ((int) thumbnails.getWidth()*x1/(int) open.getLevel0Width()); 
 			y=(int) ((int) thumbnails.getHeight()*y1/(int) open.getLevel0Height());;
 			w= (int) ((int) thumbnails.getWidth()*(int) widthThumbnail/(int) open.getLevel0Width());
-			
+
 			h = (int) ((int) thumbnails.getHeight()*(int) heightThumbnail/(int) open.getLevel0Height());
 			g.drawRect(x, y, w , h);
 			Tools.remove(aze);
@@ -547,13 +546,13 @@ public class SOFTFenetre1 extends JFrame {
 			return laDescription;
 		}
 	}
-	
+
 	/******************* Tools Bar ************************/
-	
+
 	public JPanel ToolsBar(){
 
 		JPanel Tools = new JPanel();
-		
+
 		JButton buttonBox = new javax.swing.JButton(new ImageIcon(this.getClass().getResource("/carre.png")));
 		JButton jButton2 = new javax.swing.JButton(new ImageIcon(getClass().getResource("/cercle.png")));
 		JButton jButton3 = new javax.swing.JButton(new ImageIcon(getClass().getResource("/trait.png")));
@@ -598,9 +597,9 @@ public class SOFTFenetre1 extends JFrame {
 		});
 		jButton3.setBackground(Color.white);
 
-	
 
-		
+
+
 		JButton Polygon = new javax.swing.JButton(new ImageIcon(this.getClass().getResource("/polygone.png")));
 
 		Polygon.setText("Polygon");
@@ -742,7 +741,7 @@ public class SOFTFenetre1 extends JFrame {
 				if(CountExtrapolation!=0){
 					float xdessin = (float) ((((float)(this.x1))/(2*(CountExtrapolation))));
 					float ydessin = (float) ((((float)(this.y1))/(2*(CountExtrapolation))));
-					
+
 					l.add(xdessin);
 					l.add(ydessin);
 				}else{
@@ -752,10 +751,8 @@ public class SOFTFenetre1 extends JFrame {
 					l.add(ydessin);
 				}
 			}
-
 		}
-
-	}
+	}        
 	/************************ Dessin Polygon ********************************************/
 	public class PolygonMaker implements MouseListener, MouseMotionListener {
 		int numberOfClicks;
@@ -764,52 +761,115 @@ public class SOFTFenetre1 extends JFrame {
 
 		public void init()
 		{
-			
-		   numberOfClicks = 0;
-		   xCoordinates = new int [200];
-		   yCoordinates = new int [200];
-		   if(polygon == true){
-			   imagetransitoire.addMouseListener(this);
-		   }
+
+			numberOfClicks = 0;
+			xCoordinates = new int [200];
+			yCoordinates = new int [200];
+			if(polygon == true){
+				imagetransitoire.addMouseListener(this);
+			}
 		}
 
 		public void paint(Graphics g)
 		{
 			g.setColor(Color.blue);
-			
+
 			if((Math.abs(xCoordinates[numberOfClicks-1]-xCoordinates[0]))<10
 					&& (Math.abs(yCoordinates[numberOfClicks-1]-yCoordinates[0]))<10 ) {
 				xCoordinates[numberOfClicks] = xCoordinates[0];
 				yCoordinates[numberOfClicks] = yCoordinates[0];
 				g.drawPolygon(xCoordinates,yCoordinates,numberOfClicks);
-				//ij.gui.PolygonRoi roi = new ij.gui.PolygonRoi(xCoordinates, yCoordinates, numberOfClicks, Roi.POLYGON);
+
+				int xmin = 1000000;
+				int xmax =0;
+				int ymin = 1000000;
+				int ymax =0;
+				for(int i=0; i<(numberOfClicks+1);i++){
+					if(xCoordinates[i]<xmin){
+						xmin=xCoordinates[i];
+
+					}
+					if(xCoordinates[i]>xmax){
+						xmax=xCoordinates[i];
+
+					}
+					if(yCoordinates[i]<ymin){
+						ymin=yCoordinates[i];
+
+					}
+					if(yCoordinates[i]>ymax){
+						ymax=yCoordinates[i];
+					}
+					System.out.println(xmin);
+					System.out.println(ymax);
+					System.out.println(ymin);
+					System.out.println(ymax);
+				}
+
+				OpenSlide open = null;
+				long larg = 0;
+				long haut = 0;
+				try {
+					open = new OpenSlide(Filechoose);
+					int largeur = ZoomImage.getWidth();
+					int hauteur = ZoomImage.getHeight();
+					System.out.println("xmax-xmin : " + (xmax-xmin));
+					System.out.println("ymax-ymin : " + (ymax-ymin));
+					System.out.println("largeur : " + largeur);
+					System.out.println("hauteur : " + hauteur);
+					larg =   ((xmax-xmin)*(open.getLevel0Height())/largeur);
+					haut = ((ymax-ymin)*(open.getLevel0Height())/hauteur);
+					System.out.println("larg : " + larg);
+					System.out.println("haut : " + haut);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+
+				int zzzz = numberOfClicks;
+				CarreSegmenter();
+				for(int j= 0; j<(zzzz+1); j++){
+					System.out.println(" j : "+j);
+					xCoordinates[j] = (int) ((xCoordinates[j]-xmin)*larg/(xmax-xmin));
+					yCoordinates[j] = (int) ((yCoordinates[j]-ymin)*haut/(ymax-ymin));
+					System.out.println(xCoordinates[j]);
+					System.out.println(yCoordinates[j]);
+				}
+
+
+
+
+
+
+				ij.gui.PolygonRoi roi = new ij.gui.PolygonRoi(xCoordinates, yCoordinates, zzzz, Roi.POLYGON);
+
+				roilistcorrected.add(roi);
+
 				//ImagePlus gg = new ImagePlus("tr", Image);
 				//roi.setImage(gg);
 				//roi.draw(g);
-				
-				//ImageProcessor vv = roi.getMask();
-				//ImagePlus blbl = new ImagePlus("frzf",vv.getBufferedImage());
-				//blbl.show();
+
+
 				//roi.drawPixels(vv);
 				//roi.drawOverlay(g);
 				//	ImagePlus vv1 = roi.getImage();
 				//	vv1.show();
 				//if(xCoordinates[numberOfClicks] == xCoordinates[0]){
 				//	numberOfClicks=0;
-					//polygon=false;
+				//polygon=false;
 				//}
 				//zz.draw();
 				//zz.show();
-				CarreSegmenter();
-				
+
+
 				Validation.setEnabled(true);
 			}
-			
-			
+
+
 
 		}
 		public void CarreSegmenter(){
-			
+
 			int xmin = 1000000;
 			int xmax =0;
 			int ymin = 1000000;
@@ -817,15 +877,15 @@ public class SOFTFenetre1 extends JFrame {
 			for(int i=0; i<(numberOfClicks+1);i++){
 				if(xCoordinates[i]<xmin){
 					xmin=xCoordinates[i];
-				
+
 				}
 				if(xCoordinates[i]>xmax){
 					xmax=xCoordinates[i];
-					
+
 				}
 				if(yCoordinates[i]<ymin){
 					ymin=yCoordinates[i];
-					
+
 				}
 				if(yCoordinates[i]>ymax){
 					ymax=yCoordinates[i];
@@ -837,42 +897,42 @@ public class SOFTFenetre1 extends JFrame {
 			addPositionOfRectangle(xmin, ymin, xmax-xmin, ymax-ymin);	
 			numberOfClicks=0;
 		}
-		
-			public void mousePressed(MouseEvent e)
-			{
-				if(polygon == true){
-					
-					xCoordinates[numberOfClicks] = e.getX();
-					yCoordinates[numberOfClicks] = e.getY();
-					Graphics g=imagetransitoire.getGraphics();
-					g.setColor(Color.RED);
-					if(numberOfClicks!=0){
-						g.drawLine(xCoordinates[numberOfClicks-1], yCoordinates[numberOfClicks-1], xCoordinates[numberOfClicks], yCoordinates[numberOfClicks]);
-					}
-					numberOfClicks++;
+
+		public void mousePressed(MouseEvent e)
+		{
+			if(polygon == true){
+
+				xCoordinates[numberOfClicks] = e.getX();
+				yCoordinates[numberOfClicks] = e.getY();
+				Graphics g=imagetransitoire.getGraphics();
+				g.setColor(Color.RED);
+				if(numberOfClicks!=0){
+					g.drawLine(xCoordinates[numberOfClicks-1], yCoordinates[numberOfClicks-1], xCoordinates[numberOfClicks], yCoordinates[numberOfClicks]);
+				}
+				numberOfClicks++;
 				if(numberOfClicks>2){
 					paint(g);
 				}
 			}
-			}
-			
-			public void mouseDragged(MouseEvent arg0) {}			
-			public void mouseMoved(MouseEvent arg0) {}
-			public void mouseClicked(MouseEvent arg0) {}
-			public void mouseEntered(MouseEvent arg0) {}
-			public void mouseExited(MouseEvent arg0) {}
-			public void mouseReleased(MouseEvent arg0) {}
-			public void addPositionOfRectangle(int x1,int y1,int x,int y){
-				tabValeur[0] = x1;
-				tabValeur[1] = y1;
-				tabValeur[2] = x;
-				tabValeur[3] = y;
-				listCarreASegmenter.add(tabValeur);
-				tabValeur=null;
-				tabValeur = new int[4];
-			}
-	
-}
+		}
+
+		public void mouseDragged(MouseEvent arg0) {}			
+		public void mouseMoved(MouseEvent arg0) {}
+		public void mouseClicked(MouseEvent arg0) {}
+		public void mouseEntered(MouseEvent arg0) {}
+		public void mouseExited(MouseEvent arg0) {}
+		public void mouseReleased(MouseEvent arg0) {}
+		public void addPositionOfRectangle(int x1,int y1,int x,int y){
+			tabValeur[0] = x1;
+			tabValeur[1] = y1;
+			tabValeur[2] = x;
+			tabValeur[3] = y;
+			listCarreASegmenter.add(tabValeur);
+			tabValeur=null;
+			tabValeur = new int[4];
+		}
+
+	}
 	/************************ DESSIN RECTANGLE ****************************************/
 
 	public class dessinerRec implements MouseListener, MouseMotionListener {
@@ -894,7 +954,7 @@ public class SOFTFenetre1 extends JFrame {
 				x = e.getX();
 				y = e.getY();
 				x1=x; y1=y;
-				
+
 			}
 		}
 
@@ -917,7 +977,7 @@ public class SOFTFenetre1 extends JFrame {
 		public void mouseClicked(MouseEvent event){}
 		public void mouseDragged(MouseEvent arg0) {}
 		public void addPositionOfRectangle(int x1,int y1,int x,int y){
-			
+
 			tabValeur[0] = x1;
 			tabValeur[1] = y1;
 			tabValeur[2] = x;
@@ -937,35 +997,35 @@ public class SOFTFenetre1 extends JFrame {
 			}
 		}
 		public void mouseWheelMoved(MouseWheelEvent e) {
-	        int notches = e.getWheelRotation();
-	       
+			int notches = e.getWheelRotation();
+
 
 			OpenSlide open = null;
-			
+
 			try {
 				open = new OpenSlide(getFilechoose());
 
 			} catch (IOException e2) {
-				
+
 				e2.printStackTrace();
 			}
 
 			boolean Dezoom = false;
-			 if (notches < 0) {
-				 if(CountZoom==0){
-						CountZoom=2;
-					}else{
-						CountZoom = CountZoom*2;
-					}
-					Dezoom = false;
-	             //ici tu scroll ver le haut
-	        } else {
-	        	if(CountZoom != 1){
+			if (notches < 0) {
+				if(CountZoom==0){
+					CountZoom=2;
+				}else{
+					CountZoom = CountZoom*2;
+				}
+				Dezoom = false;
+				//ici tu scroll ver le haut
+			} else {
+				if(CountZoom != 1){
 					CountZoom = CountZoom/2;
 					Dezoom = true;
 				}
-	             //ici tu scroll vers le bas
-	        }
+				//ici tu scroll vers le bas
+			}
 
 			try {
 				widthThumbnail = (int)(open.getLevel0Width()/(CountZoom));
@@ -1002,7 +1062,7 @@ public class SOFTFenetre1 extends JFrame {
 					if(Dezoom == false){
 						CountExtrapolation = CountExtrapolation+1;
 						BufferedImage before = Image;
-						
+
 						int w1 = before.getWidth();
 						int h = before.getHeight();
 						BufferedImage after = new BufferedImage(w1*(2*CountExtrapolation), h*(2*CountExtrapolation), BufferedImage.TYPE_INT_ARGB);
@@ -1043,7 +1103,7 @@ public class SOFTFenetre1 extends JFrame {
 				label.setHorizontalAlignment(JLabel.CENTER);
 				label.setVerticalAlignment(JLabel.CENTER);
 				panel.add(label,BorderLayout.NORTH);
-				
+
 				imagetransitoire = caseImage(Image);
 				new position();
 				ZoomImage.add(imagetransitoire);	
@@ -1054,8 +1114,8 @@ public class SOFTFenetre1 extends JFrame {
 			}catch (IOException e1) {
 				e1.printStackTrace();
 			}
-		
-	    } 
+
+		} 
 		public void mouseClicked(MouseEvent e) {
 			OpenSlide open = null;
 			try {
@@ -1164,7 +1224,7 @@ public class SOFTFenetre1 extends JFrame {
 				label.setHorizontalAlignment(JLabel.CENTER);
 				label.setVerticalAlignment(JLabel.CENTER);
 				panel.add(label,BorderLayout.NORTH);
-				
+
 				imagetransitoire = caseImage(Image);
 				new position();
 				ZoomImage.add(imagetransitoire);	
@@ -1259,7 +1319,7 @@ public class SOFTFenetre1 extends JFrame {
 					//IP = new ImagePlus("NewImagePlus", Image);
 					//weka2.setTrainingImage(IP);
 					//weka2.applyClassifier(true);
-					
+
 					RoiClassified = weka2.getClassifiedImage();
 					overlay = RoiClassified.getImageStack().getProcessor(RoiClassified.getCurrentSlice()).duplicate();
 					colorOverlay = overlay.convertToColorProcessor();
@@ -1268,36 +1328,36 @@ public class SOFTFenetre1 extends JFrame {
 					colorOverlay.autoThreshold();
 					colorOverlay.setBinaryThreshold();
 					overlayImage = colorOverlay.getBufferedImage();
-					
+
 					if(widthThumbnail<800 &&heightThumbnail<800){
-					BufferedImage before = overlayImage;
-					
-					int w1 = before.getWidth();
-					int h = before.getHeight();
-					BufferedImage after = new BufferedImage(w1*(2*(CountExtrapolation)), h*(2*(CountExtrapolation)), BufferedImage.TYPE_INT_ARGB);
-					AffineTransform at = new AffineTransform();
-					at.scale(CountExtrapolation*2, CountExtrapolation*2);
-					AffineTransformOp scaleOp = 
-							new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
-					after = scaleOp.filter(before, after);
-					overlayImage=after;
+						BufferedImage before = overlayImage;
+
+						int w1 = before.getWidth();
+						int h = before.getHeight();
+						BufferedImage after = new BufferedImage(w1*(2*(CountExtrapolation)), h*(2*(CountExtrapolation)), BufferedImage.TYPE_INT_ARGB);
+						AffineTransform at = new AffineTransform();
+						at.scale(CountExtrapolation*2, CountExtrapolation*2);
+						AffineTransformOp scaleOp = 
+								new AffineTransformOp(at, AffineTransformOp.TYPE_BILINEAR);
+						after = scaleOp.filter(before, after);
+						overlayImage=after;
 					}
 					if (CounterButtonOverlay % 2 ==0 ){
-						
+
 						stockTransitoryImage = imagetransitoire;
 						ZoomImage.remove(imagetransitoire);
 						panel.validate();
 						panel.revalidate();
 						imagetransitoire = caseImage(overlayImage); 
-						
+
 						ZoomImage.add(imagetransitoire);					
 						ZoomImage.revalidate();
 						panel.add(ZoomImage);
 						panel.repaint();
 						CounterButtonOverlay = CounterButtonOverlay+1;
-						
+
 					}else{
-						
+
 						ZoomImage.remove(imagetransitoire);
 						panel.validate();
 						panel.revalidate();
@@ -1307,7 +1367,7 @@ public class SOFTFenetre1 extends JFrame {
 						panel.add(ZoomImage);
 						panel.repaint();
 						CounterButtonOverlay = CounterButtonOverlay+1;
-						
+
 					}
 				}
 			});
@@ -1317,7 +1377,7 @@ public class SOFTFenetre1 extends JFrame {
 			resultButton.setEnabled(false);
 			resultButton.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent e){
-					
+
 				}
 			});
 
@@ -1330,16 +1390,16 @@ public class SOFTFenetre1 extends JFrame {
 					RoiClassified.show();
 				}
 			});
-			
-			
+
+
 			ApplyClassifieurinRoiOfimage = new JButton("Apply Classifieur in Roi of image");
 			ApplyClassifieurinRoiOfimage.setToolTipText("Select your ROI with ");
 			ApplyClassifieurinRoiOfimage.addActionListener(new ActionListener(){
 				public void actionPerformed(ActionEvent e){
 					polygon=true;
-					
+
 					/****************** On charge une thumbnail de l'image entière *****************/
-					
+
 					OpenSlide open = null;
 					try {
 						open = new OpenSlide(Filechoose);
@@ -1358,7 +1418,7 @@ public class SOFTFenetre1 extends JFrame {
 					panel.validate();
 					panel.revalidate();
 					imagetransitoire = caseImage(image);
-					
+
 					ZoomImage.add(imagetransitoire);					
 					ZoomImage.validate();
 					panel.add(ZoomImage);
@@ -1373,7 +1433,7 @@ public class SOFTFenetre1 extends JFrame {
 
 					PolygonMaker rec = new PolygonMaker();
 					rec.init();
-					
+
 
 				}		
 			});
@@ -1388,30 +1448,31 @@ public class SOFTFenetre1 extends JFrame {
 						tabValeur=null;
 						System.out.println(i+ " "+listCarreASegmenter.get(i));
 						tabValeur=listCarreASegmenter.get(i);
-					
-					OpenSlide open = null;
 
-					try {
-						
-						open = new OpenSlide(Filechoose);
-						
-						int largeur = ZoomImage.getWidth();
-						int hauteur = ZoomImage.getHeight();
-						x = (int) ((tabValeur[0]*(int)(open.getLevel0Width()))/largeur);
-						y = (int) ((tabValeur[1]*(int)(open.getLevel0Height()))/hauteur);
-						long larg =  (tabValeur[2]*(open.getLevel0Height())/largeur);
-						long haut =  (tabValeur[3]*(open.getLevel0Height())/hauteur);
-						int maxsize;
-						if(larg-haut>=0){
-							maxsize = (int) larg;
-						}else{
-							maxsize = (int) haut;
-						}
-						listImage.add(open.createThumbnailImage(x, y, larg, haut, maxsize));
-						tabbuffereds = new BufferedImage[((int) haut/variable)+1][((int) larg/variable)+1];
+						OpenSlide open = null;
+
+						try {
+
+							open = new OpenSlide(Filechoose);
+
+							int largeur = ZoomImage.getWidth();
+							int hauteur = ZoomImage.getHeight();
+							x = (int) ((tabValeur[0]*(int)(open.getLevel0Width()))/largeur);
+							y = (int) ((tabValeur[1]*(int)(open.getLevel0Height()))/hauteur);
+							long larg =  (tabValeur[2]*(open.getLevel0Height())/largeur);
+							long haut =  (tabValeur[3]*(open.getLevel0Height())/hauteur);
+							System.out.println(larg+ "largeur dans validation");
+							int maxsize;
+							if(larg-haut>=0){
+								maxsize = (int) larg;
+							}else{
+								maxsize = (int) haut;
+							}
+							listImage.add(open.createThumbnailImage(x, y, larg, haut, maxsize));
+							tabbuffereds = new BufferedImage[((int) haut/variable)+1][((int) larg/variable)+1];
 							tabweka = new WekaSegmentation[((int) haut/variable)+1][((int) larg/variable)+1];
 							tabIP = new ImagePlus[((int) haut/variable)+1][((int) larg/variable)+1];
-							
+
 
 
 							int counti=0;
@@ -1451,48 +1512,46 @@ public class SOFTFenetre1 extends JFrame {
 								county=0;
 								counti=counti+1;
 							}
-						
-								donnees = new Object[tabbuffereds.length*tabbuffereds[0].length][2];
-								int nbProcs = Runtime.getRuntime().availableProcessors();
-								nbProcs -=Math.round(nbProcs*50/100);
-								ExecutorService executorService = Executors.newFixedThreadPool(8);
-								for(int k = 0; k< tabbuffereds.length; k++){
-									for (int l =0; l<tabbuffereds[0].length; l++){
-										Runnable runnable = new MonTraitement(k,l); 
-										executorService.submit(runnable);
-									}
-								}
 
-								executorService.shutdown();
-								executorService.awaitTermination(99999, TimeUnit.SECONDS);
-//								String[] entetes = {"nbdethread", "Time"};
-//								JTable tableau = new JTable(donnees, entetes);
-//								System.out.println("tableau : \n"+tableau);
-//								for(int j = 0;j<(tabbuffereds.length*tabbuffereds[0].length);j++){
-//									System.out.println(donnees[j][0]);
-//									System.out.println(donnees[j][1]);
-//								}	 
-//								JFileChooser newJFileChoose = new JFileChooser();
-//								int ee = JFileChooser.DIRECTORIES_ONLY;
-//								System.out.println(ee);
-//								newJFileChoose.setFileSelectionMode(1);
-//								newJFileChoose.setApproveButtonText("Choose the location of your table ");
-//								int returnVal = newJFileChoose.showOpenDialog(getParent());
-//								if(returnVal == JFileChooser.APPROVE_OPTION) {			 
-//									String filechoose = newJFileChoose.getSelectedFile().getPath();
-//									exportTable(tableau, new File(filechoose+"/TestThread.csv")); 
-//								}
-							
-						
-					}catch (InterruptedException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					} catch (IOException e3) {
-						// TODO Auto-generated catch block
-						e3.printStackTrace();
-					}
-					System.out.println("finish");
-					listImageSegmenter.add(tabbuffereds);///
+							donnees = new Object[tabbuffereds.length*tabbuffereds[0].length][2];
+							int nbProcs = Runtime.getRuntime().availableProcessors();
+							nbProcs -=Math.round(nbProcs*50/100);
+							ExecutorService executorService = Executors.newFixedThreadPool(8);
+							for(int k = 0; k< tabbuffereds.length; k++){
+								for (int l =0; l<tabbuffereds[0].length; l++){
+									Runnable runnable = new MonTraitement(k,l); 
+									executorService.submit(runnable);
+								}
+							}
+
+							executorService.shutdown();
+							executorService.awaitTermination(99999, TimeUnit.SECONDS);
+							//								String[] entetes = {"nbdethread", "Time"};
+							//								JTable tableau = new JTable(donnees, entetes);
+							//								System.out.println("tableau : \n"+tableau);
+							//								for(int j = 0;j<(tabbuffereds.length*tabbuffereds[0].length);j++){
+							//									System.out.println(donnees[j][0]);
+							//									System.out.println(donnees[j][1]);
+							//								}	 
+							//								JFileChooser newJFileChoose = new JFileChooser();
+							//								int ee = JFileChooser.DIRECTORIES_ONLY;
+							//								System.out.println(ee);
+							//								newJFileChoose.setFileSelectionMode(1);
+							//								newJFileChoose.setApproveButtonText("Choose the location of your table ");
+							//								int returnVal = newJFileChoose.showOpenDialog(getParent());
+							//								if(returnVal == JFileChooser.APPROVE_OPTION) {			 
+							//									String filechoose = newJFileChoose.getSelectedFile().getPath();
+							//									exportTable(tableau, new File(filechoose+"/TestThread.csv")); 
+							//								}	
+						}catch (InterruptedException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						} catch (IOException e3) {
+							// TODO Auto-generated catch block
+							e3.printStackTrace();
+						}
+						System.out.println("finish");
+						listImageSegmenter.add(tabbuffereds);///
 					}
 					System.out.println("finish finish");
 					Bandeau.remove(panneau);
@@ -1503,19 +1562,12 @@ public class SOFTFenetre1 extends JFrame {
 					panneau.removeAll();
 					panneau.add(texte);
 					panneau.add(progress); 
-
-
 					Bandeau.add(panneau, BorderLayout.EAST);
 					Bandeau.setVisible(true);
 					Bandeau.revalidate();
 					Bandeau.repaint();
-
 					applywholeimage=true;
 					theboolean=true;
-
-
-				
-
 				}
 			}); 
 			ApplyClassifierInWholeImage = new JButton("Apply Classifier In Whole Image");
@@ -1597,7 +1649,7 @@ public class SOFTFenetre1 extends JFrame {
 						if(tab==true){
 
 							theboolean =true;
-							
+
 							JPanel panneau = new JPanel();
 							JLabel texte = new JLabel("Veuillez patienter pendant le chargement...");
 							progress = new JProgressBar(0, 100); 
@@ -1613,14 +1665,15 @@ public class SOFTFenetre1 extends JFrame {
 							}
 							executorService.shutdown();
 							executorService.awaitTermination(99999, TimeUnit.SECONDS);
-							
+
 							String[] entetes = {"nbdethread", "Time"};
 							JTable tableau = new JTable(donnees, entetes);
 							System.out.println("tableau : \n"+tableau);
-							 
+
 							JFileChooser newJFileChoose = new JFileChooser();
+							@SuppressWarnings("unused")
 							int ee = JFileChooser.DIRECTORIES_ONLY;
-						
+
 							newJFileChoose.setFileSelectionMode(1);
 							newJFileChoose.setApproveButtonText("Choose the location of your table ");
 							int returnVal = newJFileChoose.showOpenDialog(getParent());
@@ -1656,7 +1709,7 @@ public class SOFTFenetre1 extends JFrame {
 					theboolean=true;
 				}
 			});
-			
+
 			JButton TEST = new JButton("TEST");
 			TEST.setToolTipText("Start training the classifier");
 			TEST.addActionListener(new ActionListener(){
@@ -1689,11 +1742,11 @@ public class SOFTFenetre1 extends JFrame {
 							System.out.println(donnees[j][0]);
 							System.out.println(donnees[j][1]);
 						} 
-							String filechoose = "/sandbox/gnaullet";
-							exportTable(tableau, new File(filechoose+"/TestThread.csv"));
-						} catch (IOException ex) {
-							System.out.println(ex.getMessage());
-							ex.printStackTrace();
+						String filechoose = "/sandbox/gnaullet";
+						exportTable(tableau, new File(filechoose+"/TestThread.csv"));
+					} catch (IOException ex) {
+						System.out.println(ex.getMessage());
+						ex.printStackTrace();
 					} 
 				}
 			});
@@ -1725,28 +1778,28 @@ public class SOFTFenetre1 extends JFrame {
 			panelTotalSegmentation.add(panelSegmentation,BorderLayout.WEST);
 			return panelTotalSegmentation;
 		}
-		
+
 		/****************************export table ****************/
 		public void exportTable(JTable table, File file) throws IOException {
-		TableModel model = table.getModel();
-		FileWriter out = new FileWriter(file);
+			TableModel model = table.getModel();
+			FileWriter out = new FileWriter(file);
 
-		for(int i=0; i < model.getColumnCount(); i++) {
-			System.out.println(model.getColumnName(i));
-			out.write(model.getColumnName(i) + ";");
-		}
-		out.write("\n");
-		for(int i=0; i< model.getRowCount(); i++) {
-			for(int j=0; j < model.getColumnCount(); j++) {
-				System.out.println(model.getValueAt(i,j).toString());
-				out.write(model.getValueAt(i,j).toString()+";");
+			for(int i=0; i < model.getColumnCount(); i++) {
+				System.out.println(model.getColumnName(i));
+				out.write(model.getColumnName(i) + ";");
 			}
 			out.write("\n");
+			for(int i=0; i< model.getRowCount(); i++) {
+				for(int j=0; j < model.getColumnCount(); j++) {
+					System.out.println(model.getValueAt(i,j).toString());
+					out.write(model.getValueAt(i,j).toString()+";");
+				}
+				out.write("\n");
+			}
+			out.close();
+			System.out.println("write out to: " + file);
 		}
-		out.close();
-		System.out.println("write out to: " + file);
-	}
-		
+
 		/******************************** convert image to bufferedImage **************/	
 		public BufferedImage toBufferedImage(Image img)
 		{
@@ -1832,79 +1885,7 @@ public class SOFTFenetre1 extends JFrame {
 		} 
 
 	}
-	/******************** mail ******************/
-
-	/*	public void sendmail() {
-	Properties props = new Properties(); //info smtp dans mon exemple lemail expéditeur est en gmail donc j utilise des info de gmail
-	props.put("mail.smtp.host", "smtp.gmail.com");
-	props.put("mail.smtp.socketFactory.port", "587");
-	props.put("mail.smtp.socketFactory.class",	"javax.net.ssl.SSLSocketFactory");
-	props.put("mail.smtp.auth", "true");
-	props.put("debug", "true");
-	props.put("mail.smtp.port", "587");
-	props.setProperty("proxySet","true");
-	props.setProperty("socksProxyHost","proxyimap.univ-nantes.fr");
-	props.setProperty("socksProxyPort","143");
-
-	Session session = Session.getDefaultInstance(props,new javax.mail.Authenticator() {
-
-		protected PasswordAuthentication getPasswordAuthentication() {
-			return new PasswordAuthentication("mpc.test.44.irs.un","micropicell"); // dans cet exemle le compte mail c'est la 1ere partie sans l'@ j c po si ça marche ac
-		}
-	});
-
-	try {	 
-	Message message = new MimeMessage(session);
-	message.setFrom(new InternetAddress("mpc.test.44.irs.un@gmail.com"));
-	message.setRecipients(Message.RecipientType.TO,	InternetAddress.parse("naullet.guillaume@gmail.com"));  //destinataire
-	message.setSubject("objet de mail");
-	message.setText("corps du mail");
-	Transport.send(message);	 
-	} catch (MessagingException e) {
-				throw new RuntimeException(e);
-	}
-}*/
-
-	/*	public class email {
-
-	    // Set up the SMTP server.
-	    public void mail() throws AddressException, MessagingException {
-	        Security.addProvider(new com.sun.net.ssl.internal.ssl.Provider());
-	        final String SSL_FACTORY = "javax.net.ssl.SSLSocketFactory";
-	        final String username = "mpc.test.44.irs.un@gmail.com";
-	        final String password = "*******";
-	        final String recipientEmail = "naullet.guillaume@gmail.com";
-	        final String title ="Reciept for your remote print";
-	        final String message = " Thank you theis test as worked";
-
-
-	   
-
-	        props.put("mail.smtps.quitwait", "false");
-
-
-	        Session session = Session.getInstance(props, null);
-	// -- Create a new message --
-	        final MimeMessage msg = new MimeMessage(session);
-
-	        // -- Set the FROM and TO fields --
-	        msg.setFrom(new InternetAddress(username));
-	        msg.setRecipients(Message.RecipientType.TO, InternetAddress.parse(recipientEmail, false));
-
-
-
-	        msg.setSubject(title);
-	        msg.setText(message, "utf-8");
-
-
-	        SMTPTransport t = (SMTPTransport) session.getTransport("smtps");
-
-	        t.connect("smtp.gmail.com", username, password);
-	        t.sendMessage(msg, msg.getAllRecipients());
-	        t.close();
-	        System.out.println(" normalement c'est terminer ");
-	    }
-	}*/
+	
 	/******************* GETTER AND SETTER ******************************/	
 	public JPanel getZoomSeg() {
 		return zoomSeg;
@@ -2156,7 +2137,7 @@ public class SOFTFenetre1 extends JFrame {
 	public void setTrait(boolean trait) {
 		this.trait = trait;
 	}
-	
+
 	public BufferedImage getBuffImage() {
 		return buffImage;
 	}
